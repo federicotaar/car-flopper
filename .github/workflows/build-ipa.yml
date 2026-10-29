@@ -82,9 +82,13 @@ jobs:
           REL="v$BUILD_TAG"
           cp "$IPA" CarFlopper.ipa
           if gh release view "$REL" >/dev/null 2>&1; then
-            echo "Release $REL exists; uploading asset with --clobber."
-            gh release upload "$REL" "CarFlopper.ipa" --clobber
+            if gh release view "$REL" --json assets --jq '.assets[].name' | grep -qx 'CarFlopper.ipa'; then
+              echo "::error::Release $REL already has CarFlopper.ipa. Published assets are immutable: bump CarFlopperReleaseLabel in CarFlopper-Info.plist for a new build."
+              exit 1
+            fi
+            echo "Release $REL exists without an IPA; uploading (no replace)."
+            gh release upload "$REL" "CarFlopper.ipa"
             exit 0
           fi
-          gh release create "$REL" --prerelease --title "Car Flopper $BUILD_TAG (PRERELEASE - unverified build)" --notes "UNVERIFIED BUILD - compiles in CI but NOT yet tested on a real device. Multiplayer server is not deployed yet and visual/co-op testing is pending, so this is not playable yet. Unsigned IPA for AltStore/Sideloadly."
-          gh release upload "$REL" "CarFlopper.ipa" --clobber
+          gh release create "$REL" --prerelease --title "Car Flopper $BUILD_TAG (PRERELEASE - unverified build)" --notes "UNVERIFIED BUILD - compiles in CI but visual/co-op verification is still pending, so this is not confirmed playable yet. Multiplayer server: https://car-flopper.federicotaranu.site (bundled in the app). Unsigned IPA for AltStore/Sideloadly."
+          gh release upload "$REL" "CarFlopper.ipa"
