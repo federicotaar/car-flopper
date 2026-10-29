@@ -72,8 +72,10 @@ jobs:
 
       - name: Install idb
         run: |
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install idb-companion
           python3 -m pip install --user --quiet fb-idb || python3 -m pip install --user --break-system-packages --quiet fb-idb
           echo "$(python3 -m site --user-base)/bin" >> "$GITHUB_PATH"
+          idb_companion --version || true
           idb --version || true
 
       - name: Drive create-room, lobby and garage
