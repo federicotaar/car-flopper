@@ -616,6 +616,7 @@ enum GarageBuilder {
 
             // floating tool model
             let holder = SCNNode()
+            holder.name = "stationTool-\(st.tool)" // hidden while you hold its tool
             holder.position = SCNVector3(st.x, 1.05, st.z)
             holder.addChildNode(toolModel(st.tool, color: td.color))
             holder.runAction(.repeatForever(.sequence([
