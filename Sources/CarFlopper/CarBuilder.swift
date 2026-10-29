@@ -25,8 +25,8 @@ final class CarAssembly {
         let body = Mat.flat(def.bodyRGB.0, def.bodyRGB.1, def.bodyRGB.2, rough: 0.25, metal: 0.85)
         body.specular.contents = UIColor(white: 0.9, alpha: 1)
         let accent = Mat.flat(def.accentRGB.0, def.accentRGB.1, def.accentRGB.2, rough: 0.5, metal: 0.6)
-        let interiorMat = Mat.flat(0.10, 0.10, 0.11, rough: 0.95)
-        let seatMat = Mat.flat(0.16, 0.16, 0.18, rough: 0.9)
+        let interiorMat = Mat.flat(0.18, 0.18, 0.20, rough: 0.9)
+        let seatMat = Mat.flat(0.30, 0.28, 0.26, rough: 0.85)
 
         // lower body tub
         let tub = box(1.75, 0.55, 4.0, 0.12, [body])
@@ -223,7 +223,7 @@ final class CarAssembly {
             wheel.name = "part_\(id)"
             let tire = SCNNode(geometry: SCNTorus(ringRadius: 0.25, pipeRadius: 0.10))
             (tire.geometry as? SCNTorus)?.materials = [Mat.rubber]
-            tire.eulerAngles.y = .pi / 2
+            tire.eulerAngles.z = .pi / 2 // torus axis is Y; roll it onto the axle (X)
             wheel.addChildNode(tire)
             let rim = SCNNode(geometry: SCNCylinder(radius: 0.16, height: 0.20))
             (rim.geometry as? SCNCylinder)?.materials = [Mat.steelDark]
@@ -231,7 +231,7 @@ final class CarAssembly {
             wheel.addChildNode(rim)
             let rimRing = SCNNode(geometry: SCNTorus(ringRadius: 0.16, pipeRadius: 0.018))
             (rimRing.geometry as? SCNTorus)?.materials = [Mat.chrome]
-            rimRing.eulerAngles.y = .pi / 2
+            rimRing.eulerAngles.z = .pi / 2
             wheel.addChildNode(rimRing)
             for i in 0..<6 {
                 let spoke = SCNNode(geometry: SCNBox(width: 0.06, height: 0.26, length: 0.07, chamferRadius: 0.01))
@@ -262,11 +262,12 @@ final class CarAssembly {
 
         // repair markers: small halo rings hugging the broken part, one slow
         // spin + gentle pulse, colored per required tool. No floating pyramids.
+        let haloLift: [String: Float] = ["exhaust": 0.16, "engine": 0.24, "windshield": 0.30]
         for p in def.parts {
             guard let anchor = partNodes[p.id] else { continue }
             let holder = SCNNode()
-            holder.position = SCNVector3(anchor.position.x, anchor.position.y + 0.40, anchor.position.z)
-            let ring = SCNNode(geometry: SCNTorus(ringRadius: 0.19, pipeRadius: 0.016))
+            holder.position = SCNVector3(anchor.position.x, anchor.position.y + (haloLift[p.id] ?? 0.30), anchor.position.z)
+            let ring = SCNNode(geometry: SCNTorus(ringRadius: 0.14, pipeRadius: 0.013))
             let m = SCNMaterial()
             m.emission.contents = GameContent.tools[p.tool]?.color ?? UIColor(red: 1, green: 0.15, blue: 0.1, alpha: 1)
             m.diffuse.contents = UIColor.black

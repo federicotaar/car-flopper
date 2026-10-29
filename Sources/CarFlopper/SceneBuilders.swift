@@ -25,11 +25,11 @@ enum Mat {
     static let rust = Mat.flat(0.40, 0.22, 0.12)
 
     static func setup() {
-        glass.diffuse.contents = UIColor(white: 0.20, alpha: 0.45)
+        glass.diffuse.contents = UIColor(white: 0.38, alpha: 0.42)
         glass.specular.contents = UIColor(white: 0.9, alpha: 1)
         glass.isDoubleSided = true
-        glass.roughness.contents = 0.08
-        glass.metalness.contents = 0.4
+        glass.roughness.contents = 0.12
+        glass.metalness.contents = 0.05
     }
 }
 
