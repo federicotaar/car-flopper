@@ -26,7 +26,9 @@ final class CarAssembly {
         body.specular.contents = UIColor(white: 0.9, alpha: 1)
         let accent = Mat.flat(def.accentRGB.0, def.accentRGB.1, def.accentRGB.2, rough: 0.5, metal: 0.6)
         let interiorMat = Mat.flat(0.18, 0.18, 0.20, rough: 0.9)
+        interiorMat.emission.contents = UIColor(white: 0.10, alpha: 1)
         let seatMat = Mat.flat(0.30, 0.28, 0.26, rough: 0.85)
+        seatMat.emission.contents = UIColor(white: 0.12, alpha: 1)
 
         // lower body tub
         let tub = box(1.75, 0.55, 4.0, 0.12, [body])

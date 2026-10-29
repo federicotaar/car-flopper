@@ -350,8 +350,8 @@ enum GarageBuilder {
         key.intensity = 850
         key.castsShadow = true
 #if targetEnvironment(simulator)
-        key.shadowMapSize = CGSize(width: 1024, height: 1024)
-        key.shadowSampleCount = 8
+        key.shadowMapSize = CGSize(width: 512, height: 512)
+        key.shadowSampleCount = 4
 #else
         key.shadowMapSize = CGSize(width: 2048, height: 2048)
         key.shadowSampleCount = 12

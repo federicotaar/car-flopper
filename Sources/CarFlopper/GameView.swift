@@ -10,8 +10,11 @@ struct GameView: View {
 
     private func autoDriveGame() {
         #if AUTODRIVE
-        guard ProcessInfo.processInfo.arguments.contains("-CFAutoDrive") else { return }
-        print("[CFAUTODRIVE] garage appeared")
+        let adArgs = ProcessInfo.processInfo.arguments
+        guard adArgs.contains("-CFAutoDrive") else { return }
+        // -CFAutoDriveDebug adds the on-screen overlay; keep preview captures clean
+        let adDebug = adArgs.contains("-CFAutoDriveDebug")
+        NSLog("[CFAUTODRIVE] garage appeared")
         // showcase orbit: closed-loop strafe around the car through the normal
         // joystick movement pipeline (moveLocal clamps, heading, network sync),
         // facing the car the whole time. Player position changes continuously
@@ -19,18 +22,21 @@ struct GameView: View {
         // phase 0: closed-loop orbit (walking proof). phases 1/2/3: park at
         // front-left, front-right and rear so captures cover the whole car.
         DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
-            print("[CFAUTODRIVE] orbit start")
+            NSLog("[CFAUTODRIVE] orbit start")
             var phase = 0
             var lastP = vm.sceneCtrl.localPosition
             var stuckTicks = 0
             var tick = 0
-            DispatchQueue.main.asyncAfter(deadline: .now() + 30.0) { phase = 1; print("[CFAUTODRIVE] park front-left") }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 50.0) { phase = 2; print("[CFAUTODRIVE] park front-right") }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 70.0) { phase = 3; print("[CFAUTODRIVE] park rear") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 30.0) { phase = 1; NSLog("[CFAUTODRIVE] park front-left") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 50.0) { phase = 2; NSLog("[CFAUTODRIVE] park front-right") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 70.0) { phase = 3; NSLog("[CFAUTODRIVE] park rear") }
             Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
                 let p = vm.sceneCtrl.localPosition
                 tick += 1
-                if tick % 50 == 0 { print("[CFAUTODRIVE] tick \(tick) pos \(p.x) \(p.z) phase \(phase)") }
+                if tick % 30 == 0 { NSLog("[CFAUTODRIVE] tick %d pos %.2f %.2f phase %d", tick, p.x, p.z, phase) }
+                if adDebug && tick % 10 == 0 {
+                    vm.autodriveDebug = String(format: "AD t%.0fs pos(%.2f,%.2f) ph%d", Double(tick)/10.0, p.x, p.z, phase)
+                }
                 let moved = hypotf(p.x - lastP.x, p.z - lastP.z)
                 let pushing = vm.joystick.dx != 0 || vm.joystick.dy != 0
                 if pushing && moved < 0.01 { stuckTicks += 1 } else { stuckTicks = 0 }
@@ -38,7 +44,8 @@ struct GameView: View {
                 if stuckTicks > 5 {
                     // grinding an obstacle (collision stops translation while the
                     // stick keeps pushing): back straight off, then resume
-                    vm.joystick = CGVector(dx: 0, dy: 0.85)
+                    let back = CGVector(dx: 0, dy: 0.85)
+                    if vm.joystick != back { vm.joystick = back }
                     if stuckTicks > 12 { stuckTicks = 0 }
                     return
                 }
@@ -48,7 +55,10 @@ struct GameView: View {
                     // keep orbit radius in [2.9, 3.4] so we never grind the car or the walls
                     let r = hypotf(p.x, p.z)
                     let inward: Float = r > 3.4 ? 0.35 : (r < 2.9 ? -0.35 : 0.0)
-                    vm.joystick = CGVector(dx: 0.7, dy: Double(-inward))
+                    let nj = CGVector(dx: 0.7, dy: Double(-inward))
+                    // write-on-change: constant @Published churn at 10 Hz forces
+                    // SwiftUI re-evaluation around the SCNView every tick
+                    if vm.joystick != nj { vm.joystick = nj }
                 } else {
                     let t: (Float, Float) = phase == 1 ? (-1.7, 3.1) : (phase == 2 ? (1.7, 3.1) : (0, -3.4))
                     let dx = t.0 - p.x, dz = t.1 - p.z
@@ -56,10 +66,11 @@ struct GameView: View {
                     if d > 0.18 {
                         // walk toward the parking spot (camera-relative movement)
                         vm.sceneCtrl.cameraYaw = atan2f(-dx, -dz)
-                        vm.joystick = CGVector(dx: 0, dy: -0.55)
+                        let fwd = CGVector(dx: 0, dy: -0.55)
+                        if vm.joystick != fwd { vm.joystick = fwd }
                     } else {
                         // parked: face the car
-                        vm.joystick = .zero
+                        if vm.joystick != .zero { vm.joystick = .zero }
                         vm.sceneCtrl.cameraYaw = atan2f(p.x, p.z)
                     }
                 }
@@ -113,6 +124,24 @@ struct GameView: View {
             if vm.phase == "complete" {
                 completionOverlay
             }
+
+            #if AUTODRIVE
+            if !vm.autodriveDebug.isEmpty {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Text(vm.autodriveDebug)
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.yellow)
+                            .padding(.horizontal, 6).padding(.vertical, 3)
+                            .background(.black.opacity(0.65))
+                        Spacer()
+                    }
+                }
+                .padding(.bottom, 4).padding(.leading, 6)
+                .allowsHitTesting(false)
+            }
+            #endif
         }
         .animation(.easeInOut(duration: 0.25), value: vm.toolToast)
         .background(Color.black)
@@ -251,8 +280,10 @@ struct SceneViewBridge: UIViewRepresentable {
         v.backgroundColor = .black
 #if targetEnvironment(simulator)
         // simulator renders in software: keep the scene content identical but
-        // lower the throughput cost so CI can capture real frames
-        v.antialiasingMode = .multisampling2X
+        // lower the throughput cost so CI can capture real frames. AA off:
+        // multisampling is the top software-rasterizer cost and a stalled
+        // renderer freezes the whole showcase
+        v.antialiasingMode = .none
         v.preferredFramesPerSecond = 30
 #else
         v.antialiasingMode = .multisampling4X

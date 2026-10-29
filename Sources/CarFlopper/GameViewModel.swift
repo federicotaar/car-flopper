@@ -9,6 +9,7 @@ final class GameViewModel: ObservableObject {
     let sceneCtrl: GameSceneController
     let localId = UUID().uuidString.prefix(8).description
 
+    @Published var autodriveDebug = ""
     @Published var roomCode: String = ""
     @Published var phase: String = "lobby"
     @Published var players: [RoomPlayer] = []
