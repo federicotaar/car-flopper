@@ -34,13 +34,13 @@ final class HandRig {
 
     private enum Mode { case idle, equip, working }
     private var mode: Mode = .idle
-    private var equipT: Float = 0
+    private var equipT: CGFloat = 0
     private var workTool: String = ""
-    private var phase: Float = 0       // bob phase
-    private var bobAmp: Float = 0      // ramped walk amount
-    private var swayX: Float = 0
-    private var swayY: Float = 0
-    private var workTime: Float = 0
+    private var phase: CGFloat = 0       // bob phase
+    private var bobAmp: CGFloat = 0      // ramped walk amount
+    private var swayX: CGFloat = 0
+    private var swayY: CGFloat = 0
+    private var workTime: CGFloat = 0
 
     // camera-space rest pose: lower right, forearm entering off-screen
     private let restPos = SCNVector3(0.170, -0.175, -0.400)
@@ -80,7 +80,7 @@ final class HandRig {
         // fingers: 4 two-segment capsules along the front edge, curled for a grip
         fingers.position = SCNVector3(0, -0.002, -0.046)
         wrist.addChildNode(fingers)
-        let fx: [Float] = [-0.030, -0.010, 0.010, 0.030]
+        let fx: [CGFloat] = [-0.030, -0.010, 0.010, 0.030]
         for i in 0..<4 {
             let base = SCNNode()
             base.position = SCNVector3(fx[i], 0, 0)
@@ -97,7 +97,7 @@ final class HandRig {
             tip.geometry?.firstMaterial = skinDark
             tip.eulerAngles.x = .pi / 2
             tip.position = SCNVector3(0, 0, -0.010)
-            tipNode.addChild(tip)
+            tipNode.addChildNode(tip)
             base.addChildNode(tipNode)
             fingers.addChildNode(base)
         }
@@ -198,6 +198,7 @@ final class HandRig {
     // MARK: - per-frame update (render queue only)
 
     func update(dt: Float, move: Float, yawVel: Float, pitchVel: Float) {
+        let dt = CGFloat(dt)
         guard dt > 0, dt < 0.2 else { return }
 
         reqLock.lock()
@@ -222,20 +223,20 @@ final class HandRig {
         }
 
         // walk bob (ramped) + idle breath
-        let targetAmp: Float = min(1, move)
+        let targetAmp = CGFloat(min(1, move))
         bobAmp += (targetAmp - bobAmp) * min(1, dt * 7)
         phase += dt * (2.2 + bobAmp * 7.5)
 
         // look sway: hand lags camera rotation
-        let sx = max(-0.055, min(0.055, -yawVel * 0.050))
-        let sy = max(-0.045, min(0.045, pitchVel * 0.038))
+        let sx = max(-0.055, min(0.055, -CGFloat(yawVel) * 0.050))
+        let sy = max(-0.045, min(0.045, CGFloat(pitchVel) * 0.038))
         let sm = min(1, dt * 9)
         swayX += (sx - swayX) * sm
         swayY += (sy - swayY) * sm
 
         sway.position = SCNVector3(
-            cosf(phase * 0.5) * 0.007 * bobAmp + swayX,
-            sinf(phase) * 0.010 * bobAmp + sinf(phase * 0.31) * 0.0025 + swayY,
+            cos(phase * 0.5) * 0.007 * bobAmp + swayX,
+            sin(phase) * 0.010 * bobAmp + sin(phase * 0.31) * 0.0025 + swayY,
             0)
 
         // mode behaviour
@@ -246,11 +247,11 @@ final class HandRig {
             wrist.eulerAngles = SCNVector3(0, 0, 0)
         case .equip:
             equipT += dt
-            let T: Float = 0.85
+            let T: CGFloat = 0.85
             let p = min(1, equipT / T)
             // out-down toward the station, then back with the tool
             let out = SCNVector3(0.30, -0.31, -0.30)
-            let k: Float = p < 0.4 ? (p / 0.4) : (1 - (p - 0.4) / 0.6)
+            let k: CGFloat = p < 0.4 ? (p / 0.4) : (1 - (p - 0.4) / 0.6)
             let e = k * k * (3 - 2 * k) // smoothstep
             target = SCNVector3(restPos.x + (out.x - restPos.x) * e,
                                 restPos.y + (out.y - restPos.y) * e,
@@ -264,21 +265,21 @@ final class HandRig {
             case "wrench":
                 target = SCNVector3(0.10, -0.10, -0.34)
                 targetRot = SCNVector3(-0.15, -0.25, 0.05)
-                wrist.eulerAngles = SCNVector3(sinf(workTime * 6.5) * 0.42, 0, sinf(workTime * 6.5) * 0.10)
+                wrist.eulerAngles = SCNVector3(sin(workTime * 6.5) * 0.42, 0, sin(workTime * 6.5) * 0.10)
             case "screwdriver":
                 target = SCNVector3(0.07, -0.08, -0.33)
                 targetRot = SCNVector3(-0.10, -0.20, 0.0)
-                wrist.eulerAngles = SCNVector3(sinf(workTime * 11) * 0.06, sinf(workTime * 11) * 0.30, 0)
+                wrist.eulerAngles = SCNVector3(sin(workTime * 11) * 0.06, sin(workTime * 11) * 0.30, 0)
             case "welder":
                 target = SCNVector3(0.05, -0.12, -0.44)
                 targetRot = SCNVector3(-0.05, -0.15, 0.0)
-                wrist.eulerAngles = SCNVector3(sinf(workTime * 23) * 0.022, sinf(workTime * 19) * 0.018, 0)
+                wrist.eulerAngles = SCNVector3(sin(workTime * 23) * 0.022, sin(workTime * 19) * 0.018, 0)
                 updateArc(on: true, t: workTime)
             case "diagnostics":
                 target = SCNVector3(0.0, -0.07, -0.33)
                 targetRot = SCNVector3(0.10, -0.10, 0.0)
-                wrist.eulerAngles = SCNVector3(sinf(workTime * 1.8) * 0.03, 0, 0)
-                screenMat?.emission.intensity = 0.7 + 0.4 * CGFloat(abs(sinf(workTime * 3)))
+                wrist.eulerAngles = SCNVector3(sin(workTime * 1.8) * 0.03, 0, 0)
+                screenMat?.emission.intensity = 0.7 + 0.4 * CGFloat(abs(sin(workTime * 3)))
             default:
                 break
             }
@@ -309,7 +310,7 @@ final class HandRig {
     }
 
     // welder arc: small flickering light at the nozzle while welding
-    private func updateArc(on: Bool, t: Float) {
+    private func updateArc(on: Bool, t: CGFloat) {
         if on {
             if arcNode == nil, let welder = toolNodes["welder"] {
                 let an = SCNNode()
@@ -324,7 +325,7 @@ final class HandRig {
                 arcNode = an
                 arcLight = l
             }
-            arcLight?.intensity = CGFloat(500 + 450 * abs(sinf(t * 31)) + 150 * abs(sinf(t * 47)))
+            arcLight?.intensity = CGFloat(500 + 450 * abs(sin(t * 31)) + 150 * abs(sin(t * 47)))
         } else {
             arcLight?.intensity = 0
         }
