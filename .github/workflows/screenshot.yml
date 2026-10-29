@@ -75,22 +75,34 @@ jobs:
           sleep 4
           xcrun simctl io cf-shot screenshot shots/01-menu.png
 
-      - name: Capture auto-drive lobby, garage and walk
+      - name: Capture auto-drive lobby, garage, walk and parks
         run: |
           set -e
           sleep 9
           xcrun simctl io cf-shot screenshot shots/02-lobby.png
-          sleep 30
+          sleep 21
           xcrun simctl io cf-shot screenshot shots/03-garage.png
-          sleep 38
+          sleep 10
           xcrun simctl io cf-shot screenshot shots/04-walk.png
-          sleep 48
+          sleep 12
           xcrun simctl io cf-shot screenshot shots/05-walk2.png
+          sleep 16
+          xcrun simctl io cf-shot screenshot shots/06-park1.png
+          sleep 16
+          xcrun simctl io cf-shot screenshot shots/07-park2.png
+          sleep 16
+          xcrun simctl io cf-shot screenshot shots/08-rear.png
+          sleep 15
+          xcrun simctl io cf-shot screenshot shots/09-rear2.png
+          sleep 15
+          xcrun simctl io cf-shot screenshot shots/10-rear3.png
+          sleep 15
+          xcrun simctl io cf-shot screenshot shots/11-final.png
 
       - name: App log tail
         if: always()
         run: |
-          xcrun simctl spawn cf-shot log show --last 3m --predicate 'processImagePath CONTAINS "CarFlopper"' --style compact | tail -40 || true
+          xcrun simctl spawn cf-shot log show --last 3m --predicate 'processImagePath CONTAINS "CarFlopper"' --style compact | tail -80 || true
 
       - name: Upload screenshots
         if: always()
