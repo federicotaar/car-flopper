@@ -128,6 +128,8 @@ struct GameView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 70.0) { phase = 3; NSLog("[CFAUTODRIVE] park rear") }
             DispatchQueue.main.asyncAfter(deadline: .now() + 82.0) { phase = 4; NSLog("[CFAUTODRIVE] swing around right side") }
             DispatchQueue.main.asyncAfter(deadline: .now() + 94.0) { phase = 5; NSLog("[CFAUTODRIVE] bay close-up") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 112.0) { phase = 6; NSLog("[CFAUTODRIVE] wheel-face close-up") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 124.0) { phase = 7; NSLog("[CFAUTODRIVE] side profile") }
             Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
                 let p = vm.sceneCtrl.localPosition
                 tick += 1
@@ -158,7 +160,16 @@ struct GameView: View {
                     // SwiftUI re-evaluation around the SCNView every tick
                     if vm.sceneCtrl.joystickVector != nj { vm.sceneCtrl.joystickVector = nj }
                 } else {
-                    let t: (Float, Float) = phase == 1 ? (-1.7, 3.1) : (phase == 2 ? (1.7, 3.1) : (phase == 3 ? (0, -3.4) : (phase == 4 ? (2.6, -1.5) : (1.30, 2.20))))
+                    let t: (Float, Float)
+                    switch phase {
+                    case 1: t = (-1.7, 3.1)
+                    case 2: t = (1.7, 3.1)
+                    case 3: t = (0, -3.4)
+                    case 4: t = (2.6, -1.5)
+                    case 6: t = (-2.2, 1.95)   // in front of the FL wheel face
+                    case 7: t = (-3.2, -0.2)   // left side, full profile
+                    default: t = (1.30, 2.20)
+                    }
                     let dx = t.0 - p.x, dz = t.1 - p.z
                     let d = hypotf(dx, dz)
                     if d > 0.18 {
@@ -174,6 +185,15 @@ struct GameView: View {
                             // player reaches with the stick), looking down into the bay
                             vm.sceneCtrl.cameraYaw = atan2f(p.x - 0, p.z - 1.30)
                             vm.sceneCtrl.cameraPitchOverride = -0.48
+                        } else if phase == 6 {
+                            // wheel-face close-up: aimed at the FL wheel center so the
+                            // rim/spokes/brake are actually judgeable
+                            vm.sceneCtrl.cameraYaw = atan2f(p.x - (-0.90), p.z - 1.38)
+                            vm.sceneCtrl.cameraPitchOverride = -0.55
+                        } else if phase == 7 {
+                            // side profile at window height: roof vs glass read
+                            vm.sceneCtrl.cameraYaw = atan2f(p.x, p.z)
+                            vm.sceneCtrl.cameraPitchOverride = -0.10
                         } else {
                             vm.sceneCtrl.cameraYaw = atan2f(p.x, p.z)
                         }
