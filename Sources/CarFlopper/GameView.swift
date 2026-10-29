@@ -129,9 +129,9 @@ struct GameView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 50.0) { phase = 2; NSLog("[CFAUTODRIVE] park front-right") }
             DispatchQueue.main.asyncAfter(deadline: .now() + 70.0) { phase = 3; NSLog("[CFAUTODRIVE] park rear") }
             DispatchQueue.main.asyncAfter(deadline: .now() + 82.0) { phase = 4; NSLog("[CFAUTODRIVE] swing around right side") }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 94.0) { phase = 5; NSLog("[CFAUTODRIVE] bay close-up") }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 112.0) { phase = 6; NSLog("[CFAUTODRIVE] wheel-face close-up") }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 124.0) { phase = 7; NSLog("[CFAUTODRIVE] side profile") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 130.0) { phase = 5; NSLog("[CFAUTODRIVE] bay close-up") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 162.0) { phase = 6; NSLog("[CFAUTODRIVE] wheel-face close-up") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 194.0) { phase = 7; NSLog("[CFAUTODRIVE] side profile") }
             Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
                 let p = vm.sceneCtrl.localPosition
                 tick += 1
@@ -172,7 +172,7 @@ struct GameView: View {
                     case 2: chain = [(1.7, 3.1)]
                     case 3: chain = [(0, -3.4)]
                     case 5: chain = [(3.8, 3.6), (1.55, 2.45)]   // bay close-up, swings wide of the nose
-                    case 6: chain = [(0.0, 3.8), (-2.6, 3.0)]    // FL wheel face, stays ahead of the nose
+                    case 6: chain = [(0.0, 3.8), (-2.6, 2.6), (-2.3, 1.55)] // around the nose, then face-on to the FL wheel
                     case 7: chain = [(-3.4, 2.4), (-3.2, -0.2)]  // left flank out wide, then profile spot
                     default: chain = [(2.6, -1.5)]
                     }
