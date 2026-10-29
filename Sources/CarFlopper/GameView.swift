@@ -30,7 +30,8 @@ struct GameView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 30.0) { phase = 1; NSLog("[CFAUTODRIVE] park front-left") }
             DispatchQueue.main.asyncAfter(deadline: .now() + 50.0) { phase = 2; NSLog("[CFAUTODRIVE] park front-right") }
             DispatchQueue.main.asyncAfter(deadline: .now() + 70.0) { phase = 3; NSLog("[CFAUTODRIVE] park rear") }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 90.0) { phase = 4; NSLog("[CFAUTODRIVE] bay close-up") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 82.0) { phase = 4; NSLog("[CFAUTODRIVE] swing around right side") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 94.0) { phase = 5; NSLog("[CFAUTODRIVE] bay close-up") }
             Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
                 let p = vm.sceneCtrl.localPosition
                 tick += 1
@@ -61,7 +62,7 @@ struct GameView: View {
                     // SwiftUI re-evaluation around the SCNView every tick
                     if vm.joystick != nj { vm.joystick = nj }
                 } else {
-                    let t: (Float, Float) = phase == 1 ? (-1.7, 3.1) : (phase == 2 ? (1.7, 3.1) : (phase == 3 ? (0, -3.4) : (0, 2.6)))
+                    let t: (Float, Float) = phase == 1 ? (-1.7, 3.1) : (phase == 2 ? (1.7, 3.1) : (phase == 3 ? (0, -3.4) : (phase == 4 ? (2.6, -1.5) : (1.05, 1.95))))
                     let dx = t.0 - p.x, dz = t.1 - p.z
                     let d = hypotf(dx, dz)
                     if d > 0.18 {
@@ -72,10 +73,11 @@ struct GameView: View {
                     } else {
                         // parked: face the car
                         if vm.joystick != .zero { vm.joystick = .zero }
-                        if phase == 4 {
-                            // engine-bay close-up: look AT the motor, slightly down
-                            vm.sceneCtrl.cameraYaw = atan2f(p.x - 0, p.z - 1.35)
-                            vm.sceneCtrl.cameraPitchOverride = -0.32
+                        if phase == 5 {
+                            // engine-bay close-up: standing at the right fender (a pose any
+                            // player reaches with the stick), looking down into the bay
+                            vm.sceneCtrl.cameraYaw = atan2f(p.x - 0, p.z - 1.30)
+                            vm.sceneCtrl.cameraPitchOverride = -0.40
                         } else {
                             vm.sceneCtrl.cameraYaw = atan2f(p.x, p.z)
                         }
