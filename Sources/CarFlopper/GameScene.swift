@@ -14,6 +14,7 @@ final class GameSceneController: NSObject {
     var localPosition = SCNVector3(0, 0, 3.5)
     var localHeading: Float = .pi // facing -z toward car
     var cameraYaw: Float = 0 // first person: looking -z, straight at the car
+    var cameraPitchOverride: Float? = nil // showcase close-ups only; nil = drag pitch
 
     private var lastSnapshot: RoomSnapshot?
     private var celebrateNode: SCNNode?
