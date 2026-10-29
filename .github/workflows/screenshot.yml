@@ -118,16 +118,3 @@ jobs:
         with:
           name: sim-screenshots
           path: shots/*.png
-
-      - name: Attach screenshots to prerelease
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          REL="v$(/usr/libexec/PlistBuddy -c 'Print :CarFlopperReleaseLabel' CarFlopper-Info.plist)"
-          if ! gh release view "$REL" >/dev/null 2>&1; then
-            gh release create "$REL" --prerelease --title "$REL (PRERELEASE - unverified build)" --notes "Automated prerelease - screenshots pending verification. Not a verified build."
-          fi
-          for f in shots/*.png; do
-            gh release upload "$REL" "$f" --clobber
-          done
