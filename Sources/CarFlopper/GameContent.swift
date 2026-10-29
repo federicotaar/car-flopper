@@ -56,14 +56,14 @@ enum GameContent {
 
     static func parts(wheelsMissing: Bool) -> [PartDef] {
         var list = [
-            PartDef(id: "wheelFL", label: "Front left wheel", x: -0.90, y: 0.36, z: 1.38, seconds: 7, tool: "wrench"),
-            PartDef(id: "wheelFR", label: "Front right wheel", x: 0.90, y: 0.36, z: 1.38, seconds: 7, tool: "wrench"),
-            PartDef(id: "wheelRL", label: "Rear left wheel", x: -0.90, y: 0.36, z: -1.38, seconds: 7, tool: "wrench"),
-            PartDef(id: "wheelRR", label: "Rear right wheel", x: 0.90, y: 0.36, z: -1.38, seconds: 7, tool: "wrench"),
-            PartDef(id: "engine", label: "Engine", x: 0.0, y: 0.85, z: 1.45, seconds: 12, tool: "diagnostics"),
-            PartDef(id: "door", label: "Driver door", x: -1.00, y: 0.70, z: -0.05, seconds: 9, tool: "screwdriver"),
-            PartDef(id: "windshield", label: "Windshield", x: 0.0, y: 1.02, z: 0.55, seconds: 9, tool: "screwdriver"),
-            PartDef(id: "exhaust", label: "Exhaust", x: 0.35, y: 0.27, z: -2.30, seconds: 8, tool: "welder"),
+            PartDef(id: "wheelFL", label: "Front left wheel", x: -0.74, y: 0.33, z: 1.52, seconds: 7, tool: "wrench"),
+            PartDef(id: "wheelFR", label: "Front right wheel", x: 0.74, y: 0.33, z: 1.52, seconds: 7, tool: "wrench"),
+            PartDef(id: "wheelRL", label: "Rear left wheel", x: -0.76, y: 0.36, z: -1.34, seconds: 7, tool: "wrench"),
+            PartDef(id: "wheelRR", label: "Rear right wheel", x: 0.76, y: 0.36, z: -1.34, seconds: 7, tool: "wrench"),
+            PartDef(id: "engine", label: "Engine", x: 0.0, y: 0.62, z: 1.40, seconds: 12, tool: "diagnostics"),
+            PartDef(id: "door", label: "Driver door", x: -0.98, y: 0.65, z: -0.05, seconds: 9, tool: "screwdriver"),
+            PartDef(id: "windshield", label: "Windshield", x: 0.0, y: 1.04, z: 0.30, seconds: 9, tool: "screwdriver"),
+            PartDef(id: "exhaust", label: "Exhaust", x: 0.35, y: 0.28, z: -2.40, seconds: 8, tool: "welder"),
         ]
         if wheelsMissing { /* same list; visual handled per car */ }
         return list
