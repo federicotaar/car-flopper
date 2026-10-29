@@ -54,7 +54,7 @@ jobs:
       - name: Build for simulator
         run: |
           set -e
-          xtool dev build --triple arm64-apple-ios-simulator -c release
+          xtool dev build --triple arm64-apple-ios-simulator -c release -Xswiftc -DAUTODRIVE
           echo "---- build output ----"
           find . -name "*.app" -maxdepth 4
 
