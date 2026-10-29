@@ -35,9 +35,9 @@ final class CarAssembly {
         let hull = box(1.78, 0.42, 4.05, 0.15, [body])
         hull.position = SCNVector3(0, 0.46, 0)
         root.addChildNode(hull)
-        let belt = box(1.70, 0.26, 3.70, 0.10, [body])
-        belt.position = SCNVector3(0, 0.78, -0.28)
-        root.addChildNode(belt)
+        let shoulder = box(1.70, 0.26, 3.70, 0.10, [body])
+        shoulder.position = SCNVector3(0, 0.78, -0.28)
+        root.addChildNode(shoulder)
         for sx in [-1, 1] as [Float] {
             let skirt = box(0.10, 0.12, 2.3, 0.03, [accent])
             skirt.position = SCNVector3(sx * 0.85, 0.27, 0)
@@ -234,7 +234,7 @@ final class CarAssembly {
         root.addChildNode(roof)
         // accent stripe over roof + trunk deck
         for (sy, sz, sl) in [(Float(1.485), Float(-0.42), Float(1.50)), (Float(0.925), Float(-1.55), Float(0.90))] {
-            let stripe = box(0.34, 0.014, sl, 0.005, [accent])
+            let stripe = box(0.34, 0.014, CGFloat(sl), 0.005, [accent])
             stripe.position = SCNVector3(0, sy, sz)
             root.addChildNode(stripe)
         }
