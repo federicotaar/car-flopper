@@ -513,7 +513,7 @@ final class CarAssembly {
             wheel.addChildNode(barrel)
             // brake disc + red caliper visible through the spoke gaps
             let disc = SCNNode(geometry: SCNCylinder(radius: 0.105, height: 0.16))
-            (disc.geometry as? SCNCylinder)?.materials = [Mat.flat(0.50, 0.50, 0.54, rough: 0.35, metal: 0.85)]
+            (disc.geometry as? SCNCylinder)?.materials = [Mat.flat(0.28, 0.28, 0.31, rough: 0.45, metal: 0.7)]
             disc.eulerAngles.z = .pi / 2
             wheel.addChildNode(disc)
             let caliper = box(0.05, 0.10, 0.075, 0.012, [Mat.flat(0.62, 0.10, 0.10, rough: 0.4)])
@@ -530,7 +530,7 @@ final class CarAssembly {
                 wheel.addChildNode(spoke)
             }
             let lip = SCNNode(geometry: SCNTorus(ringRadius: 0.155, pipeRadius: 0.030))
-            (lip.geometry as? SCNTorus)?.materials = [silver]
+            (lip.geometry as? SCNTorus)?.materials = [Mat.chrome]
             lip.eulerAngles.z = .pi / 2
             lip.position = SCNVector3(sx * 0.10, 0, 0)
             wheel.addChildNode(lip)
