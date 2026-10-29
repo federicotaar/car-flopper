@@ -47,7 +47,7 @@ final class CarAssembly {
         let hood = box(1.62, 0.07, 1.3, 0.03, [body])
         hood.position = SCNVector3(0, 0.90, 1.30)
         hood.pivot = SCNMatrix4MakeTranslation(0, 0, -0.60)
-        hood.eulerAngles.x = -0.85
+        hood.eulerAngles.x = -1.15 // propped wide (~66 deg) so the bay is open to a standing mechanic
         root.addChildNode(hood)
         // MARK: engine bay - a recognizable motor, not a textured block.
         // block + head + valve cover, coils and plug wires, intake plenum and

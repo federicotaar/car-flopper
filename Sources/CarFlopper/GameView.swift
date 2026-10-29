@@ -62,7 +62,7 @@ struct GameView: View {
                     // SwiftUI re-evaluation around the SCNView every tick
                     if vm.joystick != nj { vm.joystick = nj }
                 } else {
-                    let t: (Float, Float) = phase == 1 ? (-1.7, 3.1) : (phase == 2 ? (1.7, 3.1) : (phase == 3 ? (0, -3.4) : (phase == 4 ? (2.6, -1.5) : (1.05, 1.95))))
+                    let t: (Float, Float) = phase == 1 ? (-1.7, 3.1) : (phase == 2 ? (1.7, 3.1) : (phase == 3 ? (0, -3.4) : (phase == 4 ? (2.6, -1.5) : (1.30, 2.20))))
                     let dx = t.0 - p.x, dz = t.1 - p.z
                     let d = hypotf(dx, dz)
                     if d > 0.18 {
@@ -77,7 +77,7 @@ struct GameView: View {
                             // engine-bay close-up: standing at the right fender (a pose any
                             // player reaches with the stick), looking down into the bay
                             vm.sceneCtrl.cameraYaw = atan2f(p.x - 0, p.z - 1.30)
-                            vm.sceneCtrl.cameraPitchOverride = -0.40
+                            vm.sceneCtrl.cameraPitchOverride = -0.48
                         } else {
                             vm.sceneCtrl.cameraYaw = atan2f(p.x, p.z)
                         }
