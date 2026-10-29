@@ -30,14 +30,13 @@ final class CarAssembly {
         let seatMat = Mat.flat(0.30, 0.28, 0.26, rough: 0.85)
         seatMat.emission.contents = UIColor(white: 0.12, alpha: 1)
 
-        // body shell: two stacked slabs fake a real car's tumblehome -
-        // wide lower hull, narrower shoulder line, dark rocker trim
-        let hull = box(1.78, 0.42, 4.05, 0.15, [body])
-        hull.position = SCNVector3(0, 0.46, 0)
-        root.addChildNode(hull)
-        let shoulder = box(1.70, 0.26, 3.70, 0.10, [body])
-        shoulder.position = SCNVector3(0, 0.78, -0.28)
-        root.addChildNode(shoulder)
+        // lofted body shell: continuous surfaces with real wheel-arch
+        // openings and an open engine bay, replacing the old stacked slabs
+        body.isDoubleSided = true
+        let stations = CarMesh.bodyStations()
+        root.addChildNode(CarMesh.geometry(CarMesh.loft(stations, segs: 12), material: body))
+        root.addChildNode(CarMesh.geometry(CarMesh.cap(stations.first!, flip: false), material: body))
+        root.addChildNode(CarMesh.geometry(CarMesh.cap(stations.last!, flip: true), material: body))
         for sx in [-1, 1] as [Float] {
             let skirt = box(0.10, 0.12, 2.3, 0.03, [accent])
             skirt.position = SCNVector3(sx * 0.85, 0.27, 0)
@@ -76,11 +75,6 @@ final class CarAssembly {
         let bayFloor = box(1.40, 0.10, 1.35, 0.02, [Mat.flat(0.14, 0.14, 0.15, rough: 0.9)])
         bayFloor.position = SCNVector3(0, 0.71, 1.30)
         root.addChildNode(bayFloor)
-        for sx in [-1, 1] as [Float] {
-            let fender = box(0.34, 0.34, 1.55, 0.10, [body])
-            fender.position = SCNVector3(sx * 0.72, 0.80, 1.30)
-            root.addChildNode(fender)
-        }
         let firewall = box(1.50, 0.30, 0.06, 0.01, [Mat.flat(0.15, 0.15, 0.16, rough: 0.9)])
         firewall.position = SCNVector3(0, 0.85, 0.62)
         root.addChildNode(firewall)
@@ -192,21 +186,8 @@ final class CarAssembly {
         booster.eulerAngles.x = .pi / 2
         root.addChildNode(booster)
 
-        // front fascia wrapping the bay
-        let nose = box(1.74, 0.42, 0.50, 0.16, [body])
-        nose.position = SCNVector3(0, 0.52, 1.85)
-        root.addChildNode(nose)
 
-        // trunk deck
-        let trunk = box(1.62, 0.07, 0.9, 0.03, [body])
-        trunk.position = SCNVector3(0, 0.88, -1.55)
-        root.addChildNode(trunk)
 
-        // cabin sill: body-color shoulder between beltline and glass kills
-        // the floating-roof toy look
-        let cabin = box(1.42, 0.24, 2.05, 0.07, [body])
-        cabin.position = SCNVector3(0, 0.98, -0.32)
-        root.addChildNode(cabin)
         // greenhouse: dark interior visible through glass
         let interior = box(1.28, 0.34, 1.50, 0.05, [interiorMat])
         interior.position = SCNVector3(0, 1.04, -0.30)
@@ -228,36 +209,22 @@ final class CarAssembly {
         wheel1.eulerAngles.x = -1.1
         root.addChildNode(wheel1)
 
-        // roof
-        let roof = box(1.42, 0.07, 1.55, 0.04, [body])
-        roof.position = SCNVector3(0, 1.445, -0.42)
-        root.addChildNode(roof)
-        // accent stripe over roof + trunk deck
-        for (sy, sz, sl) in [(Float(1.485), Float(-0.42), Float(1.50)), (Float(0.925), Float(-1.55), Float(0.90))] {
-            let stripe = box(0.34, 0.014, CGFloat(sl), 0.005, [accent])
-            stripe.position = SCNVector3(0, sy, sz)
-            root.addChildNode(stripe)
-        }
+        // greenhouse: glass band + body-color roof skin, lofted as one shell
+        let gh = CarMesh.greenhouseStations()
+        root.addChildNode(CarMesh.geometry(CarMesh.loft(gh, segs: 10, t0: 0.10, t1: 0.74), material: Mat.glass))
+        root.addChildNode(CarMesh.geometry(CarMesh.loft(gh, segs: 10, t0: 0.72, t1: 1.00), material: body))
 
         // windshield (part): raked glass between hood and roof
-        let shield = box(1.30, 0.68, 0.04, 0.01, [Mat.glass])
-        shield.position = SCNVector3(0, 1.16, 0.55)
-        shield.eulerAngles.x = 0.86
+        let shield = box(1.26, 0.50, 0.04, 0.01, [Mat.glass])
+        shield.position = SCNVector3(0, 1.155, 0.465)
+        shield.eulerAngles.x = 0.82
         shield.name = "part_windshield"
         root.addChildNode(shield)
         partNodes["windshield"] = shield
 
-        // rear window
-        let rearWin = box(1.26, 0.55, 0.04, 0.01, [Mat.glass])
-        rearWin.position = SCNVector3(0, 1.18, -1.02)
-        rearWin.eulerAngles.x = -0.62
-        root.addChildNode(rearWin)
 
         // side windows
         for sx in [-1, 1] as [Float] {
-            let side = box(0.03, 0.32, 1.46, 0.01, [Mat.glass])
-            side.position = SCNVector3(sx * 0.68, 1.24, -0.40)
-            root.addChildNode(side)
             // chrome beltline trim under the glass
             let trim = box(0.02, 0.03, 1.50, 0.005, [Mat.chrome])
             trim.position = SCNVector3(sx * 0.67, 0.97, -0.40)
@@ -378,9 +345,9 @@ final class CarAssembly {
                            ("wheelRR", Float(0.85), Float(-1.30))] {
             let wheel = SCNNode()
             wheel.name = "part_\(id)"
-            let tire = SCNNode(geometry: SCNTorus(ringRadius: 0.25, pipeRadius: 0.10))
-            (tire.geometry as? SCNTorus)?.materials = [Mat.rubber]
-            tire.eulerAngles.z = .pi / 2 // torus axis is Y; roll it onto the axle (X)
+            let tire = CarMesh.latheX([(0.24, -0.10), (0.325, -0.09), (0.355, -0.045),
+                                       (0.355, 0.045), (0.325, 0.09), (0.24, 0.10)],
+                                      segs: 18, material: Mat.rubber)
             wheel.addChildNode(tire)
             let rim = SCNNode(geometry: SCNCylinder(radius: 0.17, height: 0.20))
             (rim.geometry as? SCNCylinder)?.materials = [Mat.flat(0.72, 0.73, 0.77, rough: 0.3, metal: 0.9)]
