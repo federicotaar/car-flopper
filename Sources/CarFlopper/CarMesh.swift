@@ -170,21 +170,21 @@ enum CarMesh {
         func st(_ z: Float, _ f: Float, _ w: Float, _ t: Float, _ sq: Float = 2.2, _ bay: Bool = false) {
             s.append(BodyStation(z: z, floorY: f, halfW: w, topY: t, square: sq, bay: bay))
         }
-        st(2.12, 0.30, 0.84, 0.58)          // nose tip
-        st(2.02, 0.22, 0.88, 0.72)          // bumper line
-        st(1.88, 0.20, 0.895, 0.86)         // hood leading edge
-        st(1.70, 0.20, 0.90, 0.905, 2.4, true)   // bay front
-        st(1.30, 0.20, 0.90, 0.93, 2.4, true)    // bay mid (fender tops)
-        st(0.90, 0.20, 0.895, 0.94, 2.4, true)   // bay rear
-        st(0.66, 0.20, 0.89, 0.965)         // cowl / firewall
-        st(0.30, 0.20, 0.885, 0.985)        // door front
-        st(-0.10, 0.20, 0.88, 0.99, 2.3)    // door mid
-        st(-0.55, 0.20, 0.875, 0.985)       // door rear / quarter
-        st(-1.00, 0.20, 0.87, 0.965)        // rear quarter
-        st(-1.45, 0.21, 0.855, 0.94)        // trunk deck
-        st(-1.85, 0.24, 0.85, 0.88)         // tail
-        st(-2.06, 0.30, 0.83, 0.70)         // tail tip
-        applyArches(&s, wheels: [(1.30, 0.36, 0.46), (-1.30, 0.36, 0.46)])
+        st(2.32, 0.28, 0.87, 0.56)          // nose tip
+        st(2.22, 0.20, 0.92, 0.70)          // bumper line
+        st(2.02, 0.18, 0.935, 0.84)         // hood leading edge
+        st(1.70, 0.18, 0.94, 0.885, 2.4, true)   // bay front
+        st(1.30, 0.18, 0.94, 0.905, 2.4, true)   // bay mid (fender tops)
+        st(0.90, 0.18, 0.935, 0.915, 2.4, true)  // bay rear
+        st(0.66, 0.18, 0.93, 0.94)          // cowl / firewall
+        st(0.30, 0.18, 0.925, 0.955)        // door front
+        st(-0.10, 0.18, 0.92, 0.96, 2.3)    // door mid
+        st(-0.55, 0.18, 0.915, 0.955)       // door rear / quarter
+        st(-1.05, 0.18, 0.91, 0.94)         // rear quarter
+        st(-1.55, 0.19, 0.895, 0.915)       // trunk deck
+        st(-1.95, 0.22, 0.88, 0.86)         // tail
+        st(-2.26, 0.28, 0.86, 0.68)         // tail tip
+        applyArches(&s, wheels: [(1.38, 0.36, 0.47), (-1.38, 0.36, 0.47)])
         return s
     }
 
@@ -194,13 +194,13 @@ enum CarMesh {
         func st(_ z: Float, _ w: Float, _ t: Float, _ sq: Float = 1.7) {
             s.append(BodyStation(z: z, floorY: 0.985, halfW: w, topY: t, square: sq, bay: false))
         }
-        st(0.62, 0.60, 1.00)   // windshield base (cowl)
-        st(0.30, 0.66, 1.30)   // windshield slope
-        st(0.05, 0.68, 1.435)  // roof front
-        st(-0.45, 0.68, 1.44)  // roof mid
-        st(-0.80, 0.66, 1.40)  // roof rear
-        st(-1.15, 0.62, 1.22)  // backlight slope
-        st(-1.45, 0.55, 1.00)  // backlight base (trunk)
+        st(0.62, 0.55, 0.97)   // windshield base (cowl)
+        st(0.28, 0.61, 1.24)   // windshield slope
+        st(-0.02, 0.63, 1.33)  // roof front
+        st(-0.48, 0.63, 1.335) // roof mid
+        st(-0.85, 0.61, 1.30)  // roof rear
+        st(-1.22, 0.57, 1.16)  // backlight slope
+        st(-1.55, 0.50, 0.97)  // backlight base (trunk)
         return s
     }
 }
