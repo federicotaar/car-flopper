@@ -79,10 +79,11 @@ jobs:
           BUILD_TAG="$(/usr/libexec/PlistBuddy -c 'Print :CarFlopperReleaseLabel' CarFlopper-Info.plist 2>/dev/null || true)"
           if [ -z "$BUILD_TAG" ]; then BUILD_TAG="dev.${{ github.run_number }}"; fi
           REL="v$BUILD_TAG"
+          cp "$IPA" CarFlopper.ipa
           if gh release view "$REL" >/dev/null 2>&1; then
-            echo "Release $REL already published; bump CarFlopperReleaseLabel for a new one."
+            echo "Release $REL exists; uploading asset with --clobber."
+            gh release upload "$REL" "CarFlopper.ipa" --clobber
             exit 0
           fi
           gh release create "$REL" --prerelease --title "Car Flopper $BUILD_TAG (PRERELEASE - unverified build)" --notes "UNVERIFIED BUILD - compiles in CI but NOT yet tested on a real device. Multiplayer server is not deployed yet and visual/co-op testing is pending, so this is not playable yet. Unsigned IPA for AltStore/Sideloadly."
-          cp "$IPA" CarFlopper.ipa
-          gh release upload "$REL" "$IPA" "CarFlopper-$BUILD_TAG.ipa" "CarFlopper.ipa"
+          gh release upload "$REL" "CarFlopper.ipa" --clobber
