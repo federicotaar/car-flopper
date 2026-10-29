@@ -173,8 +173,8 @@ final class HandRig {
             n.addChildNode(pad)
             let sm = SCNMaterial()
             sm.diffuse.contents = UIColor(red: 0.05, green: 0.10, blue: 0.07, alpha: 1)
-            sm.emissive.contents = UIColor(red: 0.30, green: 0.95, blue: 0.45, alpha: 1)
-            sm.emissive.intensity = 0.9
+            sm.emission.contents = UIColor(red: 0.30, green: 0.95, blue: 0.45, alpha: 1)
+            sm.emission.intensity = 0.9
             screenMat = sm
             let screen = SCNNode(geometry: SCNPlane(width: 0.132, height: 0.088))
             screen.geometry?.firstMaterial = sm
@@ -278,13 +278,13 @@ final class HandRig {
                 target = SCNVector3(0.0, -0.07, -0.33)
                 targetRot = SCNVector3(0.10, -0.10, 0.0)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 1.8) * 0.03, 0, 0)
-                screenMat?.emissive.intensity = 0.7 + 0.4 * CGFloat(abs(sinf(workTime * 3)))
+                screenMat?.emission.intensity = 0.7 + 0.4 * CGFloat(abs(sinf(workTime * 3)))
             default:
                 break
             }
         }
         if mode != .working || workTool != "welder" { updateArc(on: false, t: 0) }
-        if mode != .working || workTool != "diagnostics" { screenMat?.emissive.intensity = 0.9 }
+        if mode != .working || workTool != "diagnostics" { screenMat?.emission.intensity = 0.9 }
 
         // smooth toward target pose
         let f = min(1, dt * 9)
