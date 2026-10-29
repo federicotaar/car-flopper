@@ -390,16 +390,24 @@ final class CarAssembly {
         for p in def.parts {
             guard let anchor = partNodes[p.id] else { continue }
             let holder = SCNNode()
-            // lift above the part, then push outward from the car's center
-            // axis: panel-flush parts (wheels, door) keep their full ring
-            // instead of the fender slicing it into an arc, while depth
-            // testing stays on so markers never show through the car
-            let push: Float = 0.22
+            // lift above the part, then push the ring clear of the body so
+            // panels stop biting its edge, while depth testing stays on so
+            // markers never show through the car. Flank parts (wheels, door)
+            // push straight OUT sideways: a radial push shoves the front
+            // wheels' rings toward the bumper and the arch lip still clips
+            // them. Centerline parts (engine, windshield, exhaust) push
+            // radially away from the body axis.
+            let push: Float = 0.30
+            let flank = abs(anchor.position.x) > 0.5
             let alen = max(0.001, hypotf(anchor.position.x, anchor.position.z))
-            holder.position = SCNVector3(anchor.position.x + anchor.position.x / alen * push,
+            let px = flank ? anchor.position.x + (anchor.position.x >= 0 ? push : -push)
+                           : anchor.position.x + anchor.position.x / alen * push
+            let pz = flank ? anchor.position.z
+                           : anchor.position.z + anchor.position.z / alen * push
+            holder.position = SCNVector3(px,
                                          anchor.position.y + (haloLift[p.id] ?? 0.40),
-                                         anchor.position.z + anchor.position.z / alen * push)
-            let ring = SCNNode(geometry: SCNTorus(ringRadius: 0.14, pipeRadius: 0.013))
+                                         pz)
+            let ring = SCNNode(geometry: SCNTorus(ringRadius: 0.12, pipeRadius: 0.012))
             let m = SCNMaterial()
             m.emission.contents = GameContent.tools[p.tool]?.color ?? UIColor(red: 1, green: 0.15, blue: 0.1, alpha: 1)
             m.diffuse.contents = UIColor.black
@@ -413,7 +421,7 @@ final class CarAssembly {
             face.addChildNode(ring)
             holder.addChildNode(face)
             ring.runAction(.repeatForever(.sequence([
-                .scale(to: 1.18, duration: 0.8),
+                .scale(to: 1.10, duration: 0.8),
                 .scale(to: 1.0, duration: 0.8),
             ])))
             root.addChildNode(holder)
