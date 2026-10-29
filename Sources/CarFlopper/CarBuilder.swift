@@ -217,12 +217,78 @@ final class CarAssembly {
         fuse.position = SCNVector3(-0.62, 1.00, 1.45)
         root.addChildNode(fuse)
 
+        // intake runners: four curved tubes from plenum to the head
+        for i in 0..<4 {
+            let z: Float = 1.02 + Float(i) * 0.185
+            let runner = SCNNode(geometry: SCNCylinder(radius: 0.028, height: 0.16))
+            (runner.geometry as? SCNCylinder)?.materials = [aluminum]
+            runner.position = SCNVector3(0.13, 1.115, z)
+            runner.eulerAngles.z = 1.05
+            root.addChildNode(runner)
+        }
+
+        // radiator fan + shroud behind the radiator
+        let shroud = box(0.92, 0.28, 0.03, 0.01, [blackPlastic])
+        shroud.position = SCNVector3(0, 0.92, 1.765)
+        root.addChildNode(shroud)
+        let fan = SCNNode(geometry: SCNCylinder(radius: 0.11, height: 0.035))
+        (fan.geometry as? SCNCylinder)?.materials = [Mat.flat(0.16, 0.16, 0.18, rough: 0.8)]
+        fan.position = SCNVector3(0.06, 0.92, 1.745)
+        fan.eulerAngles.x = .pi / 2
+        root.addChildNode(fan)
+        for i in 0..<4 {
+            let blade = box(0.20, 0.055, 0.02, 0.008, [blackPlastic])
+            blade.position = SCNVector3(0.06, 0.92, 1.755)
+            blade.eulerAngles.z = Float(i) * .pi / 4
+            root.addChildNode(blade)
+        }
+
+        // lower radiator hose
+        let hose2 = SCNNode(geometry: SCNCylinder(radius: 0.032, height: 0.30))
+        (hose2.geometry as? SCNCylinder)?.materials = [rubber]
+        hose2.position = SCNVector3(-0.20, 0.82, 1.66)
+        hose2.eulerAngles.x = 1.2
+        root.addChildNode(hose2)
+
+        // strut brace across the towers
+        let brace = SCNNode(geometry: SCNCylinder(radius: 0.02, height: 1.24))
+        (brace.geometry as? SCNCylinder)?.materials = [Mat.steel]
+        brace.position = SCNVector3(0, 1.05, 0.82)
+        brace.eulerAngles.z = .pi / 2
+        root.addChildNode(brace)
+
+        // brake master cylinder next to the booster
+        let master = box(0.09, 0.07, 0.14, 0.015, [aluminum])
+        master.position = SCNVector3(-0.42, 1.055, 0.62)
+        root.addChildNode(master)
+
+        // washer fluid tank (translucent white, black cap) front-left
+        let washer = box(0.14, 0.11, 0.10, 0.025, [{
+            let m = SCNMaterial()
+            m.diffuse.contents = UIColor(red: 0.88, green: 0.90, blue: 0.86, alpha: 0.8)
+            m.roughness.contents = 0.35
+            return m
+        }()])
+        washer.position = SCNVector3(-0.55, 0.88, 1.82)
+        root.addChildNode(washer)
+        let washerCap = SCNNode(geometry: SCNCylinder(radius: 0.028, height: 0.025))
+        (washerCap.geometry as? SCNCylinder)?.materials = [blackPlastic]
+        washerCap.position = SCNVector3(-0.55, 0.95, 1.82)
+        root.addChildNode(washerCap)
+
         // hood prop rod: thin steel strut from bay floor to the open hood
-        let prop = SCNNode(geometry: SCNCylinder(radius: 0.012, height: 0.85))
+        // runs from the right fender lip up to the hood underside -
+        // fully inside the bay, no diagonal stick poking past the body
+        let prop = SCNNode(geometry: SCNCylinder(radius: 0.012, height: 0.80))
         (prop.geometry as? SCNCylinder)?.materials = [Mat.steel]
-        prop.position = SCNVector3(0.55, 1.10, 1.42)
-        prop.eulerAngles = SCNVector3(-0.62, 0, 0.18)
+        prop.position = SCNVector3(0.58, 1.31, 1.04)
+        prop.eulerAngles = SCNVector3(0.06, 0, 0.10)
         root.addChildNode(prop)
+
+        // dark liner on the hood underside so the open hood reads as a panel
+        let liner = box(1.50, 0.03, 1.16, 0.01, [Mat.flat(0.09, 0.09, 0.10, rough: 0.95)])
+        liner.position = SCNVector3(0, -0.05, 0)
+        hood.addChildNode(liner)
 
 
 
@@ -249,8 +315,8 @@ final class CarAssembly {
 
         // greenhouse: glass band + body-color roof skin, lofted as one shell
         let gh = CarMesh.greenhouseStations()
-        root.addChildNode(CarMesh.geometry(CarMesh.loft(gh, segs: 10, t0: 0.10, t1: 0.74), material: Mat.glass))
-        root.addChildNode(CarMesh.geometry(CarMesh.loft(gh, segs: 10, t0: 0.72, t1: 1.00), material: body))
+        root.addChildNode(CarMesh.geometry(CarMesh.loft(gh, segs: 10, t0: 0.16, t1: 0.56), material: Mat.glass))
+        root.addChildNode(CarMesh.geometry(CarMesh.loft(gh, segs: 10, t0: 0.54, t1: 1.00), material: body))
 
         // windshield (part): raked glass between hood and roof
         let shield = box(1.26, 0.50, 0.04, 0.01, [Mat.glass])
@@ -271,14 +337,14 @@ final class CarAssembly {
 
         // pillars
         for sx in [-1, 1] as [Float] {
-            let ap = box(0.05, 0.58, 0.05, 0.01, [body])
+            let ap = box(0.085, 0.58, 0.06, 0.015, [body])
             ap.position = SCNVector3(sx * 0.64, 1.12, 0.40)
             ap.eulerAngles.x = 0.86
             root.addChildNode(ap)
-            let bp = box(0.045, 0.36, 0.045, 0.01, [body])
+            let bp = box(0.075, 0.36, 0.06, 0.012, [body])
             bp.position = SCNVector3(sx * 0.64, 1.11, -0.30)
             root.addChildNode(bp)
-            let cp = box(0.06, 0.50, 0.06, 0.01, [body])
+            let cp = box(0.11, 0.50, 0.08, 0.015, [body])
             cp.position = SCNVector3(sx * 0.62, 1.16, -1.00)
             cp.eulerAngles.x = -0.62
             root.addChildNode(cp)
@@ -367,6 +433,59 @@ final class CarAssembly {
         plate.position = SCNVector3(0, 0.38, -2.425)
         root.addChildNode(plate)
 
+        // front plate + lower intake + fog lights
+        let plateF = box(0.42, 0.13, 0.02, 0.01, [Mat.flat(0.92, 0.92, 0.88, rough: 0.6)])
+        plateF.position = SCNVector3(0, 0.45, 2.445)
+        root.addChildNode(plateF)
+        let intake = box(1.30, 0.09, 0.05, 0.02, [Mat.flat(0.06, 0.06, 0.07, rough: 0.9)])
+        intake.position = SCNVector3(0, 0.30, 2.40)
+        root.addChildNode(intake)
+        for dx in [-0.62, 0.62] as [Float] {
+            let fog = SCNNode(geometry: SCNCylinder(radius: 0.035, height: 0.03))
+            (fog.geometry as? SCNCylinder)?.materials = [Mat.flat(0.10, 0.10, 0.11, rough: 0.6)]
+            fog.position = SCNVector3(dx, 0.32, 2.42)
+            fog.eulerAngles.x = .pi / 2
+            root.addChildNode(fog)
+        }
+
+        // panel gaps: door cutlines and hood shut lines
+        let gapMat = Mat.flat(0.04, 0.04, 0.05, rough: 0.95)
+        for sx in [-1, 1] as [Float] {
+            for dz in [Float(0.485), Float(-0.585)] {
+                let cut = box(0.02, 0.55, 0.02, 0.004, [gapMat])
+                cut.position = SCNVector3(sx * 0.945, 0.56, dz)
+                root.addChildNode(cut)
+            }
+            let shut = box(0.022, 0.015, 1.32, 0.004, [gapMat])
+            shut.position = SCNVector3(sx * 0.70, 0.918, 1.36)
+            root.addChildNode(shut)
+        }
+        let shutRear = box(1.44, 0.015, 0.022, 0.004, [gapMat])
+        shutRear.position = SCNVector3(0, 0.925, 0.68)
+        root.addChildNode(shutRear)
+
+        // fuel flap on the right rear quarter
+        let flap = SCNNode(geometry: SCNCylinder(radius: 0.06, height: 0.015))
+        (flap.geometry as? SCNCylinder)?.materials = [body]
+        flap.position = SCNVector3(-0.925, 0.72, -1.55)
+        flap.eulerAngles.z = .pi / 2
+        root.addChildNode(flap)
+
+        // wipers resting at the base of the windshield
+        for dx in [-0.28, 0.28] as [Float] {
+            let wiper = box(0.025, 0.015, 0.42, 0.005, [gapMat])
+            wiper.position = SCNVector3(dx, 0.99, 0.60)
+            wiper.eulerAngles = SCNVector3(0.82, dx > 0 ? -0.4 : 0.4, 0)
+            root.addChildNode(wiper)
+        }
+
+        // antenna stub on the right rear quarter
+        let antenna = SCNNode(geometry: SCNCylinder(radius: 0.008, height: 0.25))
+        (antenna.geometry as? SCNCylinder)?.materials = [gapMat]
+        antenna.position = SCNVector3(0.55, 1.02, -1.50)
+        antenna.eulerAngles.x = -0.15
+        root.addChildNode(antenna)
+
         // exhaust (part)
         let ex = SCNNode(geometry: SCNCylinder(radius: 0.07, height: 0.5))
         (ex.geometry as? SCNCylinder)?.materials = [Mat.steel]
@@ -387,24 +506,47 @@ final class CarAssembly {
                                        (0.355, 0.045), (0.325, 0.09), (0.24, 0.10)],
                                       segs: 18, material: Mat.rubber)
             wheel.addChildNode(tire)
-            let rim = SCNNode(geometry: SCNCylinder(radius: 0.17, height: 0.20))
-            (rim.geometry as? SCNCylinder)?.materials = [Mat.flat(0.72, 0.73, 0.77, rough: 0.3, metal: 0.9)]
-            rim.eulerAngles.z = .pi / 2
-            wheel.addChildNode(rim)
-            let rimRing = SCNNode(geometry: SCNTorus(ringRadius: 0.16, pipeRadius: 0.018))
-            (rimRing.geometry as? SCNTorus)?.materials = [Mat.chrome]
-            rimRing.eulerAngles.z = .pi / 2
-            wheel.addChildNode(rimRing)
-            for i in 0..<6 {
-                let spoke = SCNNode(geometry: SCNBox(width: 0.06, height: 0.26, length: 0.07, chamferRadius: 0.01))
-                (spoke.geometry as? SCNBox)?.materials = [Mat.steel]
+            // recessed dark barrel so the gaps between spokes read as depth
+            let barrel = SCNNode(geometry: SCNCylinder(radius: 0.162, height: 0.15))
+            (barrel.geometry as? SCNCylinder)?.materials = [Mat.flat(0.09, 0.09, 0.10, rough: 0.8)]
+            barrel.eulerAngles.z = .pi / 2
+            wheel.addChildNode(barrel)
+            // brake disc + red caliper visible through the spoke gaps
+            let disc = SCNNode(geometry: SCNCylinder(radius: 0.105, height: 0.16))
+            (disc.geometry as? SCNCylinder)?.materials = [Mat.flat(0.50, 0.50, 0.54, rough: 0.35, metal: 0.85)]
+            disc.eulerAngles.z = .pi / 2
+            wheel.addChildNode(disc)
+            let caliper = box(0.05, 0.10, 0.075, 0.012, [Mat.flat(0.62, 0.10, 0.10, rough: 0.4)])
+            caliper.position = SCNVector3(0, 0.055, 0.075)
+            wheel.addChildNode(caliper)
+            // 5-spoke face on the OUTER side of the wheel
+            let sx: Float = x > 0 ? 1 : -1
+            let silver = Mat.flat(0.75, 0.76, 0.80, rough: 0.25, metal: 0.9)
+            for i in 0..<5 {
+                let spoke = SCNNode(geometry: SCNBox(width: 0.05, height: 0.29, length: 0.10, chamferRadius: 0.015))
+                (spoke.geometry as? SCNBox)?.materials = [silver]
+                spoke.position = SCNVector3(sx * 0.095, 0, 0)
                 spoke.eulerAngles.x = Float(i) * .pi / 5
                 wheel.addChildNode(spoke)
             }
-            let hub = SCNNode(geometry: SCNCylinder(radius: 0.045, height: 0.24))
-            (hub.geometry as? SCNCylinder)?.materials = [Mat.chrome]
+            let lip = SCNNode(geometry: SCNTorus(ringRadius: 0.155, pipeRadius: 0.022))
+            (lip.geometry as? SCNTorus)?.materials = [silver]
+            lip.eulerAngles.z = .pi / 2
+            lip.position = SCNVector3(sx * 0.10, 0, 0)
+            wheel.addChildNode(lip)
+            let hub = SCNNode(geometry: SCNCylinder(radius: 0.045, height: 0.06))
+            (hub.geometry as? SCNCylinder)?.materials = [silver]
             hub.eulerAngles.z = .pi / 2
+            hub.position = SCNVector3(sx * 0.11, 0, 0)
             wheel.addChildNode(hub)
+            for i in 0..<4 {
+                let a: Float = Float(i) * .pi / 2 + 0.4
+                let lug = SCNNode(geometry: SCNCylinder(radius: 0.011, height: 0.03))
+                (lug.geometry as? SCNCylinder)?.materials = [Mat.steelDark]
+                lug.eulerAngles.z = .pi / 2
+                lug.position = SCNVector3(sx * 0.115, 0.028 * cosf(a), 0.028 * sinf(a))
+                wheel.addChildNode(lug)
+            }
             wheel.position = SCNVector3(x, 0.36, z)
             root.addChildNode(wheel)
             partNodes[id] = wheel
