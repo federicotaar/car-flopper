@@ -65,48 +65,21 @@ jobs:
           echo "App bundle: $APP"
           xcrun simctl install cf-shot "$APP"
           xcrun simctl spawn cf-shot defaults write federicotaranu.carflopper carflopper.nick -string SIMHOST || true
-          xcrun simctl launch cf-shot federicotaranu.carflopper || true
+          xcrun simctl launch cf-shot federicotaranu.carflopper -CFAutoDrive || true
           sleep 10
           mkdir -p shots
           xcrun simctl io cf-shot screenshot shots/01-menu.png
 
-      - name: Install idb
-        run: |
-          HOMEBREW_NO_AUTO_UPDATE=1 brew install idb-companion
-          python3 -m pip install --user --quiet fb-idb || python3 -m pip install --user --break-system-packages --quiet fb-idb
-          echo "$(python3 -m site --user-base)/bin" >> "$GITHUB_PATH"
-          idb_companion --version || true
-          idb --version || true
-
-      - name: Drive create-room, lobby and garage
+      - name: Capture auto-drive lobby, garage and walk
         run: |
           set -e
-          UDID=$(xcrun simctl list devices -j | jq -r '.devices[][] | select(.name=="cf-shot") | .udid' | head -1)
-          echo "UDID: $UDID"
-          echo 'aW1wb3J0IGpzb24sc3lzCndhbnQ9c3lzLmFyZ3ZbMV0ubG93ZXIoKQpkYXRhPWpzb24ubG9hZChzeXMuc3RkaW4pCmJlc3Q9W05vbmVdCmRlZiB3YWxrKG4pOgogICAgaWYgaXNpbnN0YW5jZShuLGRpY3QpOgogICAgICAgIGxibD1zdHIobi5nZXQoJ0FYTGFiZWwnKSBvciBuLmdldCgnbGFiZWwnKSBvciAnJykubG93ZXIoKQogICAgICAgIGZyPW4uZ2V0KCdmcmFtZScpIG9yIHt9CiAgICAgICAgaWYgbGJsIGFuZCB3YW50IGluIGxibCBhbmQgZnI6CiAgICAgICAgICAgIGN4PWZyLmdldCgneCcsMCkrZnIuZ2V0KCd3aWR0aCcsMCkvMgogICAgICAgICAgICBjeT1mci5nZXQoJ3knLDApK2ZyLmdldCgnaGVpZ2h0JywwKS8yCiAgICAgICAgICAgIGlmIGJlc3RbMF0gaXMgTm9uZSBvciBsZW4obGJsKTxsZW4oYmVzdFswXVswXSk6CiAgICAgICAgICAgICAgICBiZXN0WzBdPShsYmwsY3gsY3kpCiAgICAgICAgZm9yIHYgaW4gbi52YWx1ZXMoKTogd2Fsayh2KQogICAgZWxpZiBpc2luc3RhbmNlKG4sbGlzdCk6CiAgICAgICAgZm9yIHYgaW4gbjogd2Fsayh2KQp3YWxrKGRhdGEpCmlmIGJlc3RbMF06IHByaW50KGYie2ludChiZXN0WzBdWzFdKX0ge2ludChiZXN0WzBdWzJdKX0iKQo=' | base64 -D > /tmp/tapfind.py
-          tap_label() {
-            idb ui describe-all --udid "$UDID" | python3 /tmp/tapfind.py "$1" > /tmp/tap.txt
-            cat /tmp/tap.txt
-          }
-          echo "== menu elements (first 1500 chars) =="
-          idb ui describe-all --udid "$UDID" | head -c 1500 || true
-          XY=$(tap_label "create garage")
-          echo "tapping CREATE GARAGE at $XY"
-          idb ui tap $XY --udid "$UDID"
-          sleep 6
-          xcrun simctl io cf-shot screenshot shots/02-lobby.png
-          idb ui describe-all --udid "$UDID" | head -c 1500 || true
-          XY=$(tap_label "start fixing")
-          echo "tapping START FIXING at $XY"
-          idb ui tap $XY --udid "$UDID"
           sleep 12
+          xcrun simctl io cf-shot screenshot shots/02-lobby.png
+          sleep 10
           xcrun simctl io cf-shot screenshot shots/03-garage.png
-          echo "== walk test: drag joystick =="
-          idb ui swipe 150 500 150 380 --udid "$UDID" --duration 1.2 || true
-          sleep 3
+          sleep 6
           xcrun simctl io cf-shot screenshot shots/04-walk.png
-          idb ui swipe 150 500 240 480 --udid "$UDID" --duration 1.2 || true
-          sleep 3
+          sleep 6
           xcrun simctl io cf-shot screenshot shots/05-walk2.png
 
       - name: App log tail
