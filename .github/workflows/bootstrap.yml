@@ -1,0 +1,22 @@
+name: Bootstrap sources
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack source tarball
+        run: |
+          set -e
+          TGZ="$(ls ./*-src.tgz 2>/dev/null | head -n1 || true)"
+          [ -z "$TGZ" ] && { echo "no tarball, nothing to do"; exit 0; }
+          mkdir -p u && tar xzf "$TGZ" -C u && cp -R u/. ./ && rm -rf u "$TGZ"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Unpack Car Flopper sources"
+          git push
