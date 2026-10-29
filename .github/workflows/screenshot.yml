@@ -88,24 +88,24 @@ jobs:
           set -e
           nohup xcrun simctl spawn cf-shot log stream --level debug --predicate 'process == "CarFlopper"' --style compact > /tmp/cflog.txt 2>&1 &
           sleep 9
-          xcrun simctl io cf-shot screenshot shots/02-lobby.png
-          sleep 21
-          xcrun simctl io cf-shot screenshot shots/03-garage.png
-          sleep 10
-          xcrun simctl io cf-shot screenshot shots/04-walk.png
+          xcrun simctl io cf-shot screenshot shots/02-orbit.png
           sleep 12
-          xcrun simctl io cf-shot screenshot shots/05-walk2.png
-          sleep 16
-          xcrun simctl io cf-shot screenshot shots/06-park1.png
-          sleep 16
-          xcrun simctl io cf-shot screenshot shots/07-park2.png
+          xcrun simctl io cf-shot screenshot shots/03-orbit2.png
+          sleep 12
+          xcrun simctl io cf-shot screenshot shots/04-parkFL.png
+          sleep 12
+          xcrun simctl io cf-shot screenshot shots/05-parkFL2.png
+          sleep 13
+          xcrun simctl io cf-shot screenshot shots/06-parkFR.png
+          sleep 14
+          xcrun simctl io cf-shot screenshot shots/07-parkFR2.png
           sleep 16
           xcrun simctl io cf-shot screenshot shots/08-rear.png
-          sleep 15
+          sleep 17
           xcrun simctl io cf-shot screenshot shots/09-rear2.png
-          sleep 15
+          sleep 20
           xcrun simctl io cf-shot screenshot shots/10-rear3.png
-          sleep 15
+          sleep 20
           xcrun simctl io cf-shot screenshot shots/11-final.png
 
       - name: App log tail
