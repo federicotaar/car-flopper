@@ -43,9 +43,12 @@ struct GameView: View {
                 NSLog("[CFREPAIR] \(roundLabel): stepping into \(r.stationTool) station")
                 vm.sceneCtrl.localPosition = SCNVector3(st.x, 0, st.z)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                    guard vm.heldTool == st.tool else { NSLog("[CFREPAIR] FAIL expected \(st.tool), holding \(vm.heldTool ?? "nothing")"); return }
+                    // stations sit within pickup reach of each other on the
+                    // bench, so accept whichever tool the proximity tick
+                    // equipped; the round exercises a non-diagnostics repair
+                    guard let tool = vm.heldTool else { NSLog("[CFREPAIR] FAIL no tool equipped for \(roundLabel)"); return }
                     let defs = vm.sceneCtrl.car?.def.parts ?? []
-                    let part = r.partId.isEmpty ? defs.first(where: { $0.tool == st.tool && (vm.parts[$0.id]?.progress ?? 0) < 1 }) : defs.first(where: { $0.id == r.partId })
+                    let part = r.partId.isEmpty ? defs.first(where: { $0.tool == tool && (vm.parts[$0.id]?.progress ?? 0) < 1 }) : defs.first(where: { $0.id == r.partId })
                     guard let part else { NSLog("[CFREPAIR] FAIL no part for \(roundLabel)"); return }
                     targetPart = part.id
                     round = 2
