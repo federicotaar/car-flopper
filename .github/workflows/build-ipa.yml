@@ -6,6 +6,7 @@ on:
       - '**.md'
       - 'server/**'
       - 'assets/**'
+      - '.github/**'
   workflow_dispatch:
 
 permissions:
