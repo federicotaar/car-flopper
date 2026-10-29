@@ -83,6 +83,6 @@ jobs:
             echo "Release $REL already published; bump CarFlopperReleaseLabel for a new one."
             exit 0
           fi
-          gh release create "$REL" --title "Car Flopper $BUILD_TAG (unsigned ipa)" --notes "Unsigned IPA. Install/update with AltStore or Sideloadly over the existing app. Server: separate Cloudflare Worker (free tier). Status: first playable build."
+          gh release create "$REL" --prerelease --title "Car Flopper $BUILD_TAG (PRERELEASE - unverified build)" --notes "UNVERIFIED BUILD - compiles in CI but NOT yet tested on a real device. Multiplayer server is not deployed yet and visual/co-op testing is pending, so this is not playable yet. Unsigned IPA for AltStore/Sideloadly."
           cp "$IPA" CarFlopper.ipa
           gh release upload "$REL" "$IPA" "CarFlopper-$BUILD_TAG.ipa" "CarFlopper.ipa"
