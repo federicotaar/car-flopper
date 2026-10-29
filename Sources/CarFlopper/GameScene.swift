@@ -54,6 +54,7 @@ final class GameSceneController: NSObject {
         rig.root.removeFromParentNode()
         cam.addChildNode(rig.root)
         handCam = cam
+        //ADLOG NSLog("[CFAUTODRIVE][CFHAND] rig parented to cam; cam in scene=%ld", cam.parent == nil ? 0 : 1)
     }
     func equipHandTool(_ tool: String) { handRig?.requestEquip(tool) }
     func setHandWorking(_ on: Bool, tool: String?) { handRig?.setWorking(on, tool: tool) }
