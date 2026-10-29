@@ -269,7 +269,7 @@ final class HandRig {
             let T: Float = 0.85
             let p = min(1, equipT / T)
             // out-down toward the station, then back with the tool
-            let out = SCNVector3(0.22, -0.16, -0.33)
+            let out = SCNVector3(0.0, -0.24, -0.40)
             let k: Float = p < 0.4 ? (p / 0.4) : (1 - (p - 0.4) / 0.6)
             let e = k * k * (3 - 2 * k) // smoothstep
             target = SCNVector3(restPos.x + (out.x - restPos.x) * e,
@@ -282,16 +282,16 @@ final class HandRig {
             workTime += dt
             switch workTool {
             case "wrench":
-                target = SCNVector3(0.10, -0.10, -0.34)
-                targetRot = SCNVector3(-0.15, -0.25, 0.05)
+                target = SCNVector3(0.03, -0.05, -0.33)
+                targetRot = SCNVector3(-0.10, -0.18, 0.05)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 6.5) * 0.42, 0, sinf(workTime * 6.5) * 0.10)
             case "screwdriver":
-                target = SCNVector3(0.07, -0.08, -0.33)
-                targetRot = SCNVector3(-0.10, -0.20, 0.0)
+                target = SCNVector3(0.02, -0.03, -0.31)
+                targetRot = SCNVector3(-0.08, -0.35, 0.0)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 11) * 0.06, sinf(workTime * 11) * 0.30, 0)
             case "welder":
-                target = SCNVector3(0.05, -0.12, -0.44)
-                targetRot = SCNVector3(-0.05, -0.15, 0.0)
+                target = SCNVector3(0.02, -0.06, -0.40)
+                targetRot = SCNVector3(-0.05, -0.25, 0.0)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 23) * 0.022, sinf(workTime * 19) * 0.018, 0)
                 updateArc(on: true, t: workTime)
             case "diagnostics":
