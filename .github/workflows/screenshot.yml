@@ -78,13 +78,13 @@ jobs:
       - name: Capture auto-drive lobby, garage and walk
         run: |
           set -e
-          sleep 4.5
+          sleep 9
           xcrun simctl io cf-shot screenshot shots/02-lobby.png
-          sleep 6.5
+          sleep 30
           xcrun simctl io cf-shot screenshot shots/03-garage.png
-          sleep 5
+          sleep 38
           xcrun simctl io cf-shot screenshot shots/04-walk.png
-          sleep 10
+          sleep 48
           xcrun simctl io cf-shot screenshot shots/05-walk2.png
 
       - name: App log tail
