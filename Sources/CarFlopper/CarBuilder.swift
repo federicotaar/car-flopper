@@ -38,14 +38,14 @@ final class CarAssembly {
         root.addChildNode(CarMesh.geometry(CarMesh.cap(stations.first!, flip: false), material: body))
         root.addChildNode(CarMesh.geometry(CarMesh.cap(stations.last!, flip: true), material: body))
         for sx in [-1, 1] as [Float] {
-            let skirt = box(0.10, 0.12, 2.3, 0.03, [accent])
-            skirt.position = SCNVector3(sx * 0.85, 0.27, 0)
+            let skirt = box(0.10, 0.12, 2.6, 0.03, [accent])
+            skirt.position = SCNVector3(sx * 0.90, 0.25, 0)
             root.addChildNode(skirt)
         }
         // dark wheel wells behind each wheel: the shadow ring sells the arch
         let wellMat = Mat.flat(0.05, 0.05, 0.06, rough: 0.95)
-        for (wx, wz) in [(Float(-0.80), Float(1.30)), (Float(0.80), Float(1.30)),
-                         (Float(-0.80), Float(-1.30)), (Float(0.80), Float(-1.30))] {
+        for (wx, wz) in [(Float(-0.86), Float(1.38)), (Float(0.86), Float(1.38)),
+                         (Float(-0.86), Float(-1.38)), (Float(0.86), Float(-1.38))] {
             let well = SCNNode(geometry: SCNCylinder(radius: 0.42, height: 0.08))
             (well.geometry as? SCNCylinder)?.materials = [wellMat]
             well.eulerAngles.z = .pi / 2
@@ -186,26 +186,64 @@ final class CarAssembly {
         booster.eulerAngles.x = .pi / 2
         root.addChildNode(booster)
 
+        // strut towers at the rear corners of the bay
+        for sx in [-1, 1] as [Float] {
+            let tower = SCNNode(geometry: SCNCylinder(radius: 0.09, height: 0.22))
+            (tower.geometry as? SCNCylinder)?.materials = [Mat.flat(0.30, 0.31, 0.34, rough: 0.6, metal: 0.5)]
+            tower.position = SCNVector3(sx * 0.62, 0.92, 0.82)
+            root.addChildNode(tower)
+            let capNut = SCNNode(geometry: SCNCylinder(radius: 0.035, height: 0.03))
+            (capNut.geometry as? SCNCylinder)?.materials = [Mat.steelDark]
+            capNut.position = SCNVector3(sx * 0.62, 1.04, 0.82)
+            root.addChildNode(capNut)
+        }
+
+        // coolant reservoir (translucent tank, cap) by the radiator
+        let coolant = box(0.16, 0.14, 0.12, 0.03, [{
+            let m = SCNMaterial()
+            m.diffuse.contents = UIColor(red: 0.85, green: 0.88, blue: 0.80, alpha: 0.75)
+            m.roughness.contents = 0.3
+            return m
+        }()])
+        coolant.position = SCNVector3(0.52, 0.96, 1.62)
+        root.addChildNode(coolant)
+        let coolantCap = SCNNode(geometry: SCNCylinder(radius: 0.03, height: 0.03))
+        (coolantCap.geometry as? SCNCylinder)?.materials = [blackPlastic]
+        coolantCap.position = SCNVector3(0.52, 1.05, 1.62)
+        root.addChildNode(coolantCap)
+
+        // fuse box on the left inner fender
+        let fuse = box(0.22, 0.08, 0.16, 0.02, [blackPlastic])
+        fuse.position = SCNVector3(-0.62, 1.00, 1.45)
+        root.addChildNode(fuse)
+
+        // hood prop rod: thin steel strut from bay floor to the open hood
+        let prop = SCNNode(geometry: SCNCylinder(radius: 0.012, height: 0.85))
+        (prop.geometry as? SCNCylinder)?.materials = [Mat.steel]
+        prop.position = SCNVector3(0.55, 1.10, 1.42)
+        prop.eulerAngles = SCNVector3(-0.62, 0, 0.18)
+        root.addChildNode(prop)
+
 
 
         // greenhouse: dark interior visible through glass
-        let interior = box(1.28, 0.34, 1.50, 0.05, [interiorMat])
-        interior.position = SCNVector3(0, 1.04, -0.30)
+        let interior = box(1.22, 0.32, 1.50, 0.05, [interiorMat])
+        interior.position = SCNVector3(0, 0.97, -0.30)
         root.addChildNode(interior)
         let dash = box(1.26, 0.16, 0.30, 0.03, [interiorMat])
-        dash.position = SCNVector3(0, 1.16, 0.32)
+        dash.position = SCNVector3(0, 1.08, 0.32)
         root.addChildNode(dash)
         for sx in [-1, 1] as [Float] {
             let seat = box(0.50, 0.55, 0.45, 0.06, [seatMat])
-            seat.position = SCNVector3(sx * 0.33, 1.02, -0.62)
+            seat.position = SCNVector3(sx * 0.33, 0.96, -0.62)
             root.addChildNode(seat)
             let headrest = box(0.22, 0.16, 0.10, 0.03, [seatMat])
-            headrest.position = SCNVector3(sx * 0.33, 1.33, -0.72)
+            headrest.position = SCNVector3(sx * 0.33, 1.24, -0.72)
             root.addChildNode(headrest)
         }
         let wheel1 = SCNNode(geometry: SCNTorus(ringRadius: 0.13, pipeRadius: 0.018))
         (wheel1.geometry as? SCNTorus)?.materials = [interiorMat]
-        wheel1.position = SCNVector3(-0.33, 1.18, 0.12)
+        wheel1.position = SCNVector3(-0.33, 1.10, 0.12)
         wheel1.eulerAngles.x = -1.1
         root.addChildNode(wheel1)
 
@@ -216,7 +254,7 @@ final class CarAssembly {
 
         // windshield (part): raked glass between hood and roof
         let shield = box(1.26, 0.50, 0.04, 0.01, [Mat.glass])
-        shield.position = SCNVector3(0, 1.155, 0.465)
+        shield.position = SCNVector3(0, 1.09, 0.455)
         shield.eulerAngles.x = 0.82
         shield.name = "part_windshield"
         root.addChildNode(shield)
@@ -227,47 +265,47 @@ final class CarAssembly {
         for sx in [-1, 1] as [Float] {
             // chrome beltline trim under the glass
             let trim = box(0.02, 0.03, 1.50, 0.005, [Mat.chrome])
-            trim.position = SCNVector3(sx * 0.67, 0.97, -0.40)
+            trim.position = SCNVector3(sx * 0.70, 0.94, -0.40)
             root.addChildNode(trim)
         }
 
         // pillars
         for sx in [-1, 1] as [Float] {
-            let ap = box(0.05, 0.62, 0.05, 0.01, [body])
-            ap.position = SCNVector3(sx * 0.66, 1.16, 0.42)
+            let ap = box(0.05, 0.58, 0.05, 0.01, [body])
+            ap.position = SCNVector3(sx * 0.64, 1.12, 0.40)
             ap.eulerAngles.x = 0.86
             root.addChildNode(ap)
-            let bp = box(0.045, 0.40, 0.045, 0.01, [body])
-            bp.position = SCNVector3(sx * 0.66, 1.16, -0.30)
+            let bp = box(0.045, 0.36, 0.045, 0.01, [body])
+            bp.position = SCNVector3(sx * 0.64, 1.11, -0.30)
             root.addChildNode(bp)
-            let cp = box(0.06, 0.55, 0.06, 0.01, [body])
-            cp.position = SCNVector3(sx * 0.64, 1.22, -0.95)
+            let cp = box(0.06, 0.50, 0.06, 0.01, [body])
+            cp.position = SCNVector3(sx * 0.62, 1.16, -1.00)
             cp.eulerAngles.x = -0.62
             root.addChildNode(cp)
         }
 
         // driver door (part) + passenger door panel
-        let door = box(0.06, 0.5, 1.0, 0.02, [body])
-        door.position = SCNVector3(-0.90, 0.60, -0.05)
+        let door = box(0.06, 0.55, 1.05, 0.02, [body])
+        door.position = SCNVector3(-0.945, 0.56, -0.05)
         door.name = "part_door"
         root.addChildNode(door)
         partNodes["door"] = door
-        let doorR = box(0.06, 0.5, 1.0, 0.02, [body])
-        doorR.position = SCNVector3(0.90, 0.60, -0.05)
+        let doorR = box(0.06, 0.55, 1.05, 0.02, [body])
+        doorR.position = SCNVector3(0.945, 0.56, -0.05)
         root.addChildNode(doorR)
 
         // bumpers: body-color with dark lower valances
-        let bf = box(1.80, 0.28, 0.24, 0.09, [body])
-        bf.position = SCNVector3(0, 0.40, 2.12)
+        let bf = box(1.88, 0.28, 0.24, 0.09, [body])
+        bf.position = SCNVector3(0, 0.38, 2.32)
         root.addChildNode(bf)
-        let vf = box(1.50, 0.10, 0.18, 0.03, [accent])
-        vf.position = SCNVector3(0, 0.24, 2.10)
+        let vf = box(1.56, 0.10, 0.18, 0.03, [accent])
+        vf.position = SCNVector3(0, 0.22, 2.30)
         root.addChildNode(vf)
-        let bb = box(1.80, 0.28, 0.24, 0.09, [body])
-        bb.position = SCNVector3(0, 0.40, -2.10)
+        let bb = box(1.88, 0.28, 0.24, 0.09, [body])
+        bb.position = SCNVector3(0, 0.38, -2.30)
         root.addChildNode(bb)
-        let vb = box(1.50, 0.10, 0.18, 0.03, [accent])
-        vb.position = SCNVector3(0, 0.24, -2.08)
+        let vb = box(1.56, 0.10, 0.18, 0.03, [accent])
+        vb.position = SCNVector3(0, 0.22, -2.28)
         root.addChildNode(vb)
 
         // headlights: inset units wrapping the fascia corners
@@ -280,18 +318,18 @@ final class CarAssembly {
                 m.roughness.contents = 0.15
                 return m
             }()])
-            hl.position = SCNVector3(dx, 0.60, 2.10)
+            hl.position = SCNVector3(dx, 0.58, 2.30)
             hl.eulerAngles.y = dx > 0 ? -0.18 : 0.18
             root.addChildNode(hl)
         }
 
         // grille with chrome slats
         let grille = box(0.70, 0.13, 0.06, 0.02, [Mat.steelDark])
-        grille.position = SCNVector3(0, 0.50, 2.13)
+        grille.position = SCNVector3(0, 0.48, 2.33)
         root.addChildNode(grille)
         for i in 0..<2 {
             let slat = box(0.64, 0.02, 0.02, 0.005, [Mat.chrome])
-            slat.position = SCNVector3(0, 0.475 + Float(i) * 0.05, 2.165)
+            slat.position = SCNVector3(0, 0.455 + Float(i) * 0.05, 2.365)
             root.addChildNode(slat)
         }
 
@@ -303,46 +341,46 @@ final class CarAssembly {
                 m.diffuse.contents = UIColor.black
                 return [m]
             }())
-            tl.position = SCNVector3(dx, 0.64, -2.16)
+            tl.position = SCNVector3(dx, 0.62, -2.36)
             root.addChildNode(tl)
         }
 
         // side mirrors
         for sx in [-1, 1] as [Float] {
             let stalk = box(0.04, 0.04, 0.14, 0.01, [accent])
-            stalk.position = SCNVector3(sx * 0.93, 0.98, 0.42)
+            stalk.position = SCNVector3(sx * 0.98, 0.95, 0.42)
             root.addChildNode(stalk)
             let mirror = box(0.05, 0.12, 0.18, 0.02, [body])
-            mirror.position = SCNVector3(sx * 0.97, 1.12, 0.48)
+            mirror.position = SCNVector3(sx * 1.02, 1.08, 0.48)
             root.addChildNode(mirror)
         }
 
         // door handles
         for sx in [-1, 1] as [Float] {
             let handle = box(0.03, 0.04, 0.22, 0.01, [Mat.chrome])
-            handle.position = SCNVector3(sx * 0.87, 0.80, -0.35)
+            handle.position = SCNVector3(sx * 0.92, 0.78, -0.35)
             root.addChildNode(handle)
         }
 
         // rear plate
         let plate = box(0.42, 0.13, 0.02, 0.01, [Mat.flat(0.92, 0.92, 0.88, rough: 0.6)])
-        plate.position = SCNVector3(0, 0.40, -2.225)
+        plate.position = SCNVector3(0, 0.38, -2.425)
         root.addChildNode(plate)
 
         // exhaust (part)
         let ex = SCNNode(geometry: SCNCylinder(radius: 0.07, height: 0.5))
         (ex.geometry as? SCNCylinder)?.materials = [Mat.steel]
         ex.eulerAngles.x = .pi / 2
-        ex.position = SCNVector3(0.35, 0.25, -2.15)
+        ex.position = SCNVector3(0.35, 0.24, -2.35)
         ex.name = "part_exhaust"
         root.addChildNode(ex)
         partNodes["exhaust"] = ex
 
         // wheels (parts): torus tire, rim ring, spokes, hub
-        for (id, x, z) in [("wheelFL", Float(-0.85), Float(1.30)),
-                           ("wheelFR", Float(0.85), Float(1.30)),
-                           ("wheelRL", Float(-0.85), Float(-1.30)),
-                           ("wheelRR", Float(0.85), Float(-1.30))] {
+        for (id, x, z) in [("wheelFL", Float(-0.90), Float(1.38)),
+                           ("wheelFR", Float(0.90), Float(1.38)),
+                           ("wheelRL", Float(-0.90), Float(-1.38)),
+                           ("wheelRR", Float(0.90), Float(-1.38))] {
             let wheel = SCNNode()
             wheel.name = "part_\(id)"
             let tire = CarMesh.latheX([(0.24, -0.10), (0.325, -0.09), (0.355, -0.045),
