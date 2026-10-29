@@ -35,6 +35,7 @@ struct GameView: View {
                 ("diagnostics", "engine", "diagnostics round"),
                 ("wrench", "", "repair round"),   // part resolved at hold time
                 ("screwdriver", "", "screwdriver round"),
+                ("welder", "exhaust", "welder round"),
             ]
             // camera convention: view dir is (-sin yaw, 0, -cos yaw), so facing
             // (dx,dz) needs yaw = atan2(-dx,-dz) - the old atan2(dx,dz) pointed
@@ -57,12 +58,6 @@ struct GameView: View {
                 let spz = st.z - st.z / sl * 0.85
                 vm.sceneCtrl.localPosition = SCNVector3(spx, 0, spz)
                 faceTarget(st.x, st.z, from: spx, spz, pitch: -0.30)
-                // replay the equip reach while the camera faces the station:
-                // the proximity tick usually equips mid-approach (off-camera),
-                // which made pickups read as materialization in captures
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                    if let tool = vm.heldTool { vm.sceneCtrl.equipHandTool(tool) }
-                }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
                     // stations sit within pickup reach of each other on the
                     // bench, so accept whichever tool the proximity tick
