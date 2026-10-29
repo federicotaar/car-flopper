@@ -90,5 +90,5 @@ jobs:
             gh release upload "$REL" "CarFlopper.ipa"
             exit 0
           fi
-          gh release create "$REL" --prerelease --title "Car Flopper $BUILD_TAG (PRERELEASE - unverified build)" --notes "UNVERIFIED BUILD - compiles in CI but visual/co-op verification is still pending, so this is not confirmed playable yet. Multiplayer server: https://car-flopper.federicotaranu.site (bundled in the app). Unsigned IPA for AltStore/Sideloadly."
+          gh release create "$REL" --prerelease --title "Car Flopper $BUILD_TAG (PRERELEASE - test build)" --notes "Test build matching the engine-bay preview approved 29 Oct. Visuals verified in simulator only; touch, device performance, the full pickup-repair flow and in-app co-op remain unverified. Multiplayer server: https://car-flopper.federicotaranu.site (bundled in the app). Unsigned IPA for AltStore/Sideloadly."
           gh release upload "$REL" "CarFlopper.ipa"
