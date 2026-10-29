@@ -13,7 +13,7 @@ final class GameSceneController: NSObject {
     var localId: String
     var localPosition = SCNVector3(0, 0, 3.5)
     var localHeading: Float = .pi // facing -z toward car
-    var cameraYaw: Float = 0
+    var cameraYaw: Float = .pi // start behind the player, who faces the car (-z)
 
     private var lastSnapshot: RoomSnapshot?
     private var celebrateNode: SCNNode?

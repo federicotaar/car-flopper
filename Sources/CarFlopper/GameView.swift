@@ -188,16 +188,20 @@ struct SceneViewBridge: UIViewRepresentable {
             guard dt > 0 else { return }
             NotificationCenter.default.post(name: .gameTick, object: nil, userInfo: ["dt": dt])
 
-            // camera follows behind player at yaw
+            // third-person camera: behind the player at yaw, framing player AND car.
+            // look target is biased toward the car center so repairs stay in frame.
             let yaw = controller.cameraYaw
-            let dist: Float = 5.2
-            let height: Float = 4.2
+            let dist: Float = 4.6
+            let height: Float = 4.6
             let px = controller.localPosition.x
             let pz = controller.localPosition.z
-            let cx = px - sinf(yaw) * dist
-            let cz = pz - cosf(yaw) * dist
+            // clamp inside the garage shell so walls never swallow the camera
+            let cx = max(-7.8, min(7.8, px - sinf(yaw) * dist))
+            let cz = max(-5.8, min(5.8, pz - cosf(yaw) * dist))
             camNode?.position = SCNVector3(cx, height, cz)
-            camNode?.eulerAngles = SCNVector3(-0.68, yaw, 0)
+            let tx = px * 0.35
+            let tz = pz * 0.35
+            camNode?.look(at: SCNVector3(tx, 0.7, tz))
         }
     }
 }

@@ -21,12 +21,13 @@
 	<key>CFBundleVersion</key>
 	<string>2901</string>
 	<key>CarFlopperReleaseLabel</key>
-	<string>2026.10.29.1</string>
+	<string>2026.10.29.2</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
-		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 </dict>
 </plist>
