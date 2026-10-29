@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
-  workflows: write
 jobs:
   unpack:
     runs-on: ubuntu-latest
