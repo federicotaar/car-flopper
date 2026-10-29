@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import UIKit
+import SceneKit // SCNVector3 for station world positions
 import QuartzCore
 
 @MainActor
