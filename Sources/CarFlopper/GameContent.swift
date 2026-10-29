@@ -59,10 +59,10 @@ enum GameContent {
         CarDef(name: "Rusty Coupe", tagline: "She sat in a barn for 20 years. Bring her back.",
                bodyRGB: (0.62, 0.20, 0.14), accentRGB: (0.25, 0.25, 0.28), hasSpoiler: false,
                parts: parts(wheelsMissing: false)),
-        CarDef(name: "Drift 350", tagline: "Angle kit, big wing, no fear. Needs love first.",
+        CarDef(name: "Sideways 500", tagline: "Angle kit, big wing, no fear. Needs love first.",
                bodyRGB: (0.95, 0.45, 0.05), accentRGB: (0.05, 0.05, 0.06), hasSpoiler: true,
                parts: parts(wheelsMissing: false)),
-        CarDef(name: "Supra MK", tagline: "The legend. Fix her and the garage is yours.",
+        CarDef(name: "Garage Legend", tagline: "The legend. Fix her and the garage is yours.",
                bodyRGB: (0.92, 0.92, 0.94), accentRGB: (0.10, 0.25, 0.85), hasSpoiler: true,
                parts: parts(wheelsMissing: false)),
     ]

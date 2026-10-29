@@ -6,7 +6,7 @@ Un garage, un'auto incidentata, fino a 4 meccanici collegati con un codice stanz
 
 ## Scarica l'ultima versione
 
-[![Download IPA](https://img.shields.io/badge/SCARICA-ultima%20IPA-orange?style=for-the-badge)](https://github.com/federicotaranudev/car-flopper/releases/latest/download/CarFlopper.ipa)
+[![Download IPA](https://img.shields.io/badge/SCARICA-ultima%20IPA-orange?style=for-the-badge)](https://github.com/federicotaranudev/car-flopper/releases/download/v2026.10.29.1/CarFlopper.ipa)
 
 Oppure scegli una versione specifica dalla tab [Releases](https://github.com/federicotaranudev/car-flopper/releases).
 
@@ -25,7 +25,7 @@ Serve un Apple ID gratuito, niente account developer a pagamento.
 - **Entra**: inserisci il codice e scegli il tuo nickname. Niente account, niente email.
 - **Ripara**: joystick a sinistra per camminare, trascina a destra per guardarti intorno. Quando sei vicino a un pezzo rotto compare il pulsante: tieni premuto per ripararlo.
 - **Co-op**: piu' persone sullo stesso pezzo = riparazione piu' veloce.
-- **Sblocca**: sistema l'auto per passare alla successiva. 3 auto: Rusty Coupe, Drift 350, Supra MK.
+- **Sblocca**: sistema l'auto per passare alla successiva. 3 auto: Rusty Coupe, Sideways 500, Garage Legend.
 
 ## Com'e' fatto
 
@@ -35,7 +35,9 @@ Serve un Apple ID gratuito, niente account developer a pagamento.
 
 ## Stato
 
-In sviluppo attivo. Prima versione giocabile: lobby con codici, 3D con camminata, riparazioni co-op, sblocco auto. Bug e idee: apri una issue.
+In sviluppo attivo. La versione nelle Releases e' una **prerelease non verificata**: compila e il server multiplayer e' online e testato, ma l'app non e' ancora stata provata su un iPhone vero. Diventera' una release stabile dopo il test su dispositivo.
+
+Funziona: lobby con codici stanza, 3D con camminata, riparazioni co-op in tempo reale, sblocco auto. Bug e idee: apri una issue.
 
 ---
 
