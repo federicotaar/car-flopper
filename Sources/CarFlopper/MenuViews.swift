@@ -108,12 +108,14 @@ struct MenuView: View {
     }
 
     private func autoDriveMenu() {
+        #if AUTODRIVE
         guard ProcessInfo.processInfo.arguments.contains("-CFAutoDrive") else { return }
         print("[CFAUTODRIVE] menu appeared, creating room")
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             nickname = "SIMHOST"
             createRoom()
         }
+        #endif
     }
 
     private func createRoom() {
@@ -156,11 +158,13 @@ struct LobbyView: View {
     var onLeave: () -> Void
 
     private func autoDriveLobby() {
+        #if AUTODRIVE
         guard ProcessInfo.processInfo.arguments.contains("-CFAutoDrive") else { return }
         print("[CFAUTODRIVE] lobby appeared, isHost=\(vm.isHost)")
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
             if vm.isHost { print("[CFAUTODRIVE] host starting game"); onStart() }
         }
+        #endif
     }
 
     var body: some View {
