@@ -7,10 +7,19 @@ struct GameView: View {
     @ObservedObject var vm: GameViewModel
     var onLeave: () -> Void
 
+    private func autoDriveGame() {
+        guard ProcessInfo.processInfo.arguments.contains("-CFAutoDrive") else { return }
+        print("[CFAUTODRIVE] garage appeared")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) { vm.joystick = CGVector(dx: 0, dy: -1); print("[CFAUTODRIVE] walk forward") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8.5) { vm.joystick = CGVector(dx: 0.7, dy: -0.5); print("[CFAUTODRIVE] walk diagonal") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 11.5) { vm.joystick = .zero; print("[CFAUTODRIVE] walk stop") }
+    }
+
     var body: some View {
         ZStack {
             SceneViewBridge(controller: vm.sceneCtrl, cameraYaw: $vm.cameraYaw)
                 .ignoresSafeArea()
+                .onAppear { autoDriveGame() }
 
             VStack {
                 hud

@@ -19,6 +19,7 @@ struct MenuView: View {
                     Text("CAR FLOPPER")
                         .font(.system(size: 42, weight: .heavy, design: .rounded))
                         .foregroundStyle(.orange)
+                        .onAppear { autoDriveMenu() }
                     Text("fix wrecked cars with your friends")
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.7))
@@ -106,6 +107,15 @@ struct MenuView: View {
         .padding(.horizontal, 28)
     }
 
+    private func autoDriveMenu() {
+        guard ProcessInfo.processInfo.arguments.contains("-CFAutoDrive") else { return }
+        print("[CFAUTODRIVE] menu appeared, creating room")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            nickname = "SIMHOST"
+            createRoom()
+        }
+    }
+
     private func createRoom() {
         busy = true; error = nil
         Task {
@@ -145,6 +155,14 @@ struct LobbyView: View {
     var onStart: () -> Void
     var onLeave: () -> Void
 
+    private func autoDriveLobby() {
+        guard ProcessInfo.processInfo.arguments.contains("-CFAutoDrive") else { return }
+        print("[CFAUTODRIVE] lobby appeared, isHost=\(vm.isHost)")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            if vm.isHost { print("[CFAUTODRIVE] host starting game"); onStart() }
+        }
+    }
+
     var body: some View {
         ZStack {
             LinearGradient(colors: [Color(white: 0.07), Color(white: 0.16)], startPoint: .top, endPoint: .bottom)
@@ -154,6 +172,7 @@ struct LobbyView: View {
                 Text("GARAGE CODE")
                     .font(.caption.weight(.heavy))
                     .foregroundStyle(.white.opacity(0.6))
+                    .onAppear { autoDriveLobby() }
                 Text(vm.roomCode.isEmpty ? "...." : vm.roomCode)
                     .font(.system(size: 64, weight: .heavy, design: .monospaced))
                     .foregroundStyle(.green)
