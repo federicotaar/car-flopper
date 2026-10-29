@@ -15,6 +15,51 @@ struct GameView: View {
         // -CFAutoDriveDebug adds the on-screen overlay; keep preview captures clean
         let adDebug = adArgs.contains("-CFAutoDriveDebug")
         NSLog("[CFAUTODRIVE] garage appeared")
+        if adArgs.contains("-CFAutoDriveRepair") {
+            // freeze-regression mode: exercise the full repair loop (tool
+            // equip, hold-to-fix, snapshot-driven scene mutation, sparks)
+            // while a heartbeat logs; a wedged renderer or main thread shows
+            // up as missing heartbeats or no completion marker
+            var hb = 0
+            Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                hb += 1
+                NSLog("[CFREPAIR] heartbeat %d", hb)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
+                guard let st = GameContent.toolStations.first else { NSLog("[CFREPAIR] FAIL no tool stations"); return }
+                NSLog("[CFREPAIR] stepping into tool station")
+                vm.sceneCtrl.localPosition = SCNVector3(st.x, 0, st.z)
+            }
+            var targetPart: String? = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + 12.0) {
+                guard let tool = vm.heldTool else { NSLog("[CFREPAIR] FAIL no tool equipped"); return }
+                NSLog("[CFREPAIR] equipped \(tool)")
+                let defs = vm.sceneCtrl.car?.def.parts ?? []
+                guard let part = defs.first(where: { $0.tool == tool && (vm.parts[$0.id]?.progress ?? 0) < 1 }) ?? defs.first else { NSLog("[CFREPAIR] FAIL no part defs"); return }
+                targetPart = part.id
+                vm.sceneCtrl.localPosition = SCNVector3(part.x + 0.5, 0, part.z + 0.5)
+                vm.sceneCtrl.cameraYaw = atan2f(0.5, 0.5)
+                NSLog("[CFREPAIR] holding fix on \(part.id)")
+                vm.setRepairing(true)
+            }
+            var progressSeen = false
+            var fixedLogged = false
+            Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+                if !progressSeen, let id = targetPart, (vm.parts[id]?.progress ?? 0) > 0 {
+                    progressSeen = true
+                    NSLog("[CFREPAIR] progress flowing")
+                }
+                if !fixedLogged, let id = targetPart, (vm.parts[id]?.progress ?? 0) >= 1 {
+                    fixedLogged = true
+                    vm.setRepairing(false)
+                    NSLog("[CFREPAIR] part fixed OK")
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 75.0) {
+                if !fixedLogged { NSLog("[CFREPAIR] TIMEOUT FAIL") }
+            }
+            return
+        }
         // showcase orbit: closed-loop strafe around the car through the normal
         // joystick movement pipeline (moveLocal clamps, heading, network sync),
         // facing the car the whole time. Player position changes continuously
@@ -40,14 +85,14 @@ struct GameView: View {
                     vm.autodriveDebug = String(format: "AD t%.0fs pos(%.2f,%.2f) ph%d", Double(tick)/10.0, p.x, p.z, phase)
                 }
                 let moved = hypotf(p.x - lastP.x, p.z - lastP.z)
-                let pushing = vm.joystick.dx != 0 || vm.joystick.dy != 0
+                let pushing = vm.sceneCtrl.joystickVector.dx != 0 || vm.sceneCtrl.joystickVector.dy != 0
                 if pushing && moved < 0.01 { stuckTicks += 1 } else { stuckTicks = 0 }
                 lastP = p
                 if stuckTicks > 5 {
                     // grinding an obstacle (collision stops translation while the
                     // stick keeps pushing): back straight off, then resume
                     let back = CGVector(dx: 0, dy: 0.85)
-                    if vm.joystick != back { vm.joystick = back }
+                    if vm.sceneCtrl.joystickVector != back { vm.sceneCtrl.joystickVector = back }
                     if stuckTicks > 12 { stuckTicks = 0 }
                     return
                 }
@@ -60,7 +105,7 @@ struct GameView: View {
                     let nj = CGVector(dx: 0.7, dy: Double(-inward))
                     // write-on-change: constant @Published churn at 10 Hz forces
                     // SwiftUI re-evaluation around the SCNView every tick
-                    if vm.joystick != nj { vm.joystick = nj }
+                    if vm.sceneCtrl.joystickVector != nj { vm.sceneCtrl.joystickVector = nj }
                 } else {
                     let t: (Float, Float) = phase == 1 ? (-1.7, 3.1) : (phase == 2 ? (1.7, 3.1) : (phase == 3 ? (0, -3.4) : (phase == 4 ? (2.6, -1.5) : (1.30, 2.20))))
                     let dx = t.0 - p.x, dz = t.1 - p.z
@@ -69,10 +114,10 @@ struct GameView: View {
                         // walk toward the parking spot (camera-relative movement)
                         vm.sceneCtrl.cameraYaw = atan2f(-dx, -dz)
                         let fwd = CGVector(dx: 0, dy: -0.55)
-                        if vm.joystick != fwd { vm.joystick = fwd }
+                        if vm.sceneCtrl.joystickVector != fwd { vm.sceneCtrl.joystickVector = fwd }
                     } else {
                         // parked: face the car
-                        if vm.joystick != .zero { vm.joystick = .zero }
+                        if vm.sceneCtrl.joystickVector != .zero { vm.sceneCtrl.joystickVector = .zero }
                         if phase == 5 {
                             // engine-bay close-up: standing at the right fender (a pose any
                             // player reaches with the stick), looking down into the bay
@@ -90,7 +135,7 @@ struct GameView: View {
 
     var body: some View {
         ZStack {
-            SceneViewBridge(controller: vm.sceneCtrl, cameraYaw: $vm.cameraYaw)
+            SceneViewBridge(controller: vm.sceneCtrl)
                 .ignoresSafeArea()
                 .onAppear { autoDriveGame() }
 
@@ -99,7 +144,7 @@ struct GameView: View {
                 Spacer()
                 HStack(alignment: .bottom) {
                     VStack(spacing: 6) {
-                        JoystickView(vector: $vm.joystick)
+                        JoystickView { v in vm.sceneCtrl.joystickVector = v }
                             .frame(width: 130, height: 130)
                         toolChip
                     }
@@ -279,9 +324,8 @@ struct GameView: View {
 
 struct SceneViewBridge: UIViewRepresentable {
     let controller: GameSceneController
-    @Binding var cameraYaw: Float
 
-    func makeCoordinator() -> Coordinator { Coordinator(controller: controller, cameraYaw: $cameraYaw) }
+    func makeCoordinator() -> Coordinator { Coordinator(controller: controller) }
 
     func makeUIView(context: Context) -> SCNView {
         let v = SCNView()
@@ -320,28 +364,34 @@ struct SceneViewBridge: UIViewRepresentable {
         context.coordinator.camNode = cam
 
         let pan = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
+        // one finger steers the camera; the other thumb keeps the joystick
+        pan.maximumNumberOfTouches = 1
+        pan.delegate = context.coordinator
         v.addGestureRecognizer(pan)
         return v
     }
 
     func updateUIView(_ uiView: SCNView, context: Context) {}
 
-    final class Coordinator: NSObject, SCNSceneRendererDelegate {
+    final class Coordinator: NSObject, SCNSceneRendererDelegate, UIGestureRecognizerDelegate {
         let controller: GameSceneController
-        var cameraYaw: Binding<Float>
         weak var camNode: SCNNode?
         private var lastTime: TimeInterval = 0
+        private var tickPending = false
+        private let tickLock = NSLock()
 
-        init(controller: GameSceneController, cameraYaw: Binding<Float>) {
+        init(controller: GameSceneController) {
             self.controller = controller
-            self.cameraYaw = cameraYaw
         }
+
+        // the look pan must live alongside the SwiftUI joystick drag: default
+        // recognizer mediation would let only one of them track at a time
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
 
         var pitch: Float = 0
 
         @objc func handlePan(_ g: UIPanGestureRecognizer) {
             let t = g.translation(in: g.view)
-            cameraYaw.wrappedValue = controller.cameraYaw
             controller.cameraYaw -= Float(t.x) * 0.006
             pitch = max(-1.1, min(1.1, pitch - Float(t.y) * 0.006))
             g.setTranslation(.zero, in: g.view)
@@ -350,8 +400,24 @@ struct SceneViewBridge: UIViewRepresentable {
         func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
             let dt = lastTime == 0 ? 0 : Float(time - lastTime)
             lastTime = time
+            // scene mutations from the network apply here, on the render side,
+            // never racing SceneKit's draw from the main thread
+            controller.applyPendingSnapshot()
             guard dt > 0 else { return }
-            NotificationCenter.default.post(name: .gameTick, object: nil, userInfo: ["dt": dt])
+            // game logic hops to main, at most one queued hop: a stalled main
+            // thread must drop frames, not accumulate per-frame work forever
+            tickLock.lock()
+            let hopQueued = tickPending
+            if !tickPending { tickPending = true }
+            tickLock.unlock()
+            if !hopQueued {
+                DispatchQueue.main.async { [weak self] in
+                    NotificationCenter.default.post(name: .gameTick, object: nil, userInfo: ["dt": dt])
+                    self?.tickLock.lock()
+                    self?.tickPending = false
+                    self?.tickLock.unlock()
+                }
+            }
 
             // first-person camera: at the player's head, yaw + pitch from the drag
             let yaw = controller.cameraYaw
@@ -371,7 +437,9 @@ extension Notification.Name {
 // MARK: - Virtual joystick
 
 struct JoystickView: View {
-    @Binding var vector: CGVector
+    // reports into the scene controller (plain var): no SwiftUI state churn
+    // at drag-event rate, so this gesture never rebuilds the view tree
+    var onChange: (CGVector) -> Void
     @State private var knob: CGSize = .zero
 
     var body: some View {
@@ -393,11 +461,11 @@ struct JoystickView: View {
                                 t.height = t.height / len * maxR
                             }
                             knob = t
-                            vector = CGVector(dx: t.width / maxR, dy: t.height / maxR)
+                            onChange(CGVector(dx: t.width / maxR, dy: t.height / maxR))
                         }
                         .onEnded { _ in
                             knob = .zero
-                            vector = .zero
+                            onChange(.zero)
                         }
                 )
         }

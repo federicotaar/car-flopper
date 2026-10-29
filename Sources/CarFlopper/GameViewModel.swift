@@ -19,8 +19,6 @@ final class GameViewModel: ObservableObject {
     @Published var hostId = ""
     @Published var connectionError: String?
 
-    @Published var joystick: CGVector = .zero
-    @Published var cameraYaw: Float = 0
     @Published var isRepairing = false
     @Published var heldTool: String? = nil   // nil = bare hands
     @Published var toolToast: String? = nil  // "Wrench equipped" flash
@@ -66,7 +64,7 @@ final class GameViewModel: ObservableObject {
     private func tick(dt: Float) {
         guard phase == "play" else { return }
         // joystick is screen-space; rotate by camera yaw
-        let jx = Float(joystick.dx), jy = Float(joystick.dy)
+        let jx = Float(sceneCtrl.joystickVector.dx), jy = Float(sceneCtrl.joystickVector.dy)
         if jx != 0 || jy != 0 {
             let yaw = sceneCtrl.cameraYaw
             let dx = jx * cosf(yaw) + jy * sinf(yaw)
@@ -152,14 +150,11 @@ extension GameViewModel: GameSessionDelegate {
             if let myId = s.myId, self.sceneCtrl.localId != myId {
                 self.sceneCtrl.localId = myId
             }
-            self.sceneCtrl.apply(snapshot: snapshot)
+            self.sceneCtrl.enqueue(snapshot: snapshot)
             if snapshot.phase == "complete" && self.currentCarIndex != snapshot.carIndex {
                 self.currentCarIndex = snapshot.carIndex
                 UnlockStore.recordCompletion(carIndex: snapshot.carIndex)
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
-            }
-            if snapshot.phase == "play" && self.sceneCtrl.car == nil {
-                self.sceneCtrl.setCar(index: snapshot.carIndex, parts: snapshot.parts)
             }
         }
     }

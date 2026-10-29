@@ -93,7 +93,9 @@ final class GameSession: NSObject, URLSessionWebSocketDelegate {
         guard var c = URLComponents(string: "\(RoomClient.wsBase)/rooms/\(code)/ws") else { throw NetError.badURL }
         c.queryItems = [URLQueryItem(name: "name", value: name)]
         guard let url = c.url else { throw NetError.badURL }
-        let s = URLSession(configuration: .default, delegate: self, delegateQueue: .main)
+        // nil delegate queue: receive handlers and JSON decode run on a background
+        // queue, never on main; delegate callbacks hop to MainActor themselves
+        let s = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
         self.session = s
         let t = s.webSocketTask(with: url)
         self.task = t

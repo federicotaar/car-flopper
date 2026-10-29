@@ -15,6 +15,30 @@ final class GameSceneController: NSObject {
     var localHeading: Float = .pi // facing -z toward car
     var cameraYaw: Float = 0 // first person: looking -z, straight at the car
     var cameraPitchOverride: Float? = nil // showcase close-ups only; nil = drag pitch
+    // joystick vector lives here (plain var, no SwiftUI publishing): writing
+    // @Published state at gesture-event rate re-renders the whole view tree
+    // and tears down the other in-flight gesture (the move+look conflict)
+    var joystickVector: CGVector = .zero
+    // latest-wins snapshot handoff: the websocket delegate enqueues from its
+    // background queue; the renderer callback applies on the render side where
+    // scene-graph mutation cannot race SceneKit's draw
+    private var pendingSnapshot: RoomSnapshot?
+    private let snapshotLock = NSLock()
+
+    func enqueue(snapshot: RoomSnapshot) {
+        snapshotLock.lock()
+        pendingSnapshot = snapshot
+        snapshotLock.unlock()
+    }
+
+    // call only from the SCNSceneRendererDelegate update callback
+    func applyPendingSnapshot() {
+        snapshotLock.lock()
+        let snap = pendingSnapshot
+        pendingSnapshot = nil
+        snapshotLock.unlock()
+        if let snap { apply(snapshot: snap) }
+    }
 
     private var lastSnapshot: RoomSnapshot?
     private var celebrateNode: SCNNode?
