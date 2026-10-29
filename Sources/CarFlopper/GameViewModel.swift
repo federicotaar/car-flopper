@@ -21,6 +21,9 @@ final class GameViewModel: ObservableObject {
     @Published var joystick: CGVector = .zero
     @Published var cameraYaw: Float = 0
     @Published var isRepairing = false
+    @Published var heldTool: String? = nil   // nil = bare hands
+    @Published var toolToast: String? = nil  // "Wrench equipped" flash
+    @Published var wrongToolFlash = false    // tapped fix without the right tool
 
     private var tickObserver: NSObjectProtocol?
     private var lastPosSent: TimeInterval = 0
@@ -78,6 +81,23 @@ final class GameViewModel: ObservableObject {
             let moving = jx != 0 || jy != 0
             session.sendPosition(x: sceneCtrl.localPosition.x, z: sceneCtrl.localPosition.z, ry: sceneCtrl.localHeading, moving: moving)
         }
+        // tool stations: walk into a ring to equip
+        for st in GameContent.toolStations where st.tool != heldTool {
+            let dx = sceneCtrl.localPosition.x - st.x
+            let dz = sceneCtrl.localPosition.z - st.z
+            if dx * dx + dz * dz < GameContent.toolPickupReach * GameContent.toolPickupReach {
+                heldTool = st.tool
+                if let td = GameContent.tools[st.tool] {
+                    toolToast = "\(td.label) equipped"
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    let t = Task { [weak self] in
+                        try? await Task.sleep(nanoseconds: 1_600_000_000)
+                        await MainActor.run { if self?.toolToast == "\(td.label) equipped" { self?.toolToast = nil } }
+                    }
+                    _ = t
+                }
+            }
+        }
         // repairing must stop if we walk out of range or part got fixed
         if isRepairing && activePart == nil { setRepairing(false) }
         // haptics while repairing
@@ -90,6 +110,17 @@ final class GameViewModel: ObservableObject {
     func setRepairing(_ on: Bool) {
         guard on != isRepairing else { return }
         if on, let p = activePart {
+            guard heldTool == p.tool else {
+                // wrong tool (or bare hands): flash the need, never start
+                wrongToolFlash = true
+                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                let t = Task { [weak self] in
+                    try? await Task.sleep(nanoseconds: 400_000_000)
+                    await MainActor.run { self?.wrongToolFlash = false }
+                }
+                _ = t
+                return
+            }
             isRepairing = true
             session.sendRepair(part: p.id, on: true)
         } else {

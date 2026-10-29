@@ -1,5 +1,6 @@
 import SwiftUI
 import SceneKit
+import simd
 
 // MARK: - In-game view: SceneKit canvas + joystick + repair button + HUD.
 
@@ -11,9 +12,11 @@ struct GameView: View {
         #if AUTODRIVE
         guard ProcessInfo.processInfo.arguments.contains("-CFAutoDrive") else { return }
         print("[CFAUTODRIVE] garage appeared")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { vm.joystick = CGVector(dx: 0, dy: 1); print("[CFAUTODRIVE] walk toward car") }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { vm.joystick = CGVector(dx: 0.6, dy: 0.6); print("[CFAUTODRIVE] walk diagonal") }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 11.0) { vm.joystick = .zero; print("[CFAUTODRIVE] walk stop") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { vm.joystick = CGVector(dx: 0, dy: -1); print("[CFAUTODRIVE] walk forward") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) { vm.joystick = CGVector(dx: 1, dy: -0.25); print("[CFAUTODRIVE] strafe right") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 9.0) { vm.joystick = .zero; print("[CFAUTODRIVE] walk stop") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10.5) { vm.sceneCtrl.cameraYaw = 0.9; print("[CFAUTODRIVE] look at bench") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 14.0) { vm.sceneCtrl.cameraYaw = -0.7; print("[CFAUTODRIVE] look at bay") }
         #endif
     }
 
@@ -27,9 +30,12 @@ struct GameView: View {
                 hud
                 Spacer()
                 HStack(alignment: .bottom) {
-                    JoystickView(vector: $vm.joystick)
-                        .frame(width: 130, height: 130)
-                        .padding(.leading, 24)
+                    VStack(spacing: 6) {
+                        JoystickView(vector: $vm.joystick)
+                            .frame(width: 130, height: 130)
+                        toolChip
+                    }
+                    .padding(.leading, 24)
                     Spacer()
                     repairButton
                         .padding(.trailing, 24)
@@ -37,10 +43,30 @@ struct GameView: View {
                 .padding(.bottom, 34)
             }
 
+            // first-person crosshair
+            Circle()
+                .fill(Color.white.opacity(0.85))
+                .frame(width: 5, height: 5)
+                .shadow(color: .black.opacity(0.6), radius: 2)
+
+            if let toast = vm.toolToast {
+                VStack {
+                    Spacer()
+                    Text(toast.uppercased())
+                        .font(.caption.weight(.heavy))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(.black.opacity(0.7), in: Capsule())
+                        .padding(.bottom, 120)
+                }
+                .transition(.opacity)
+            }
+
             if vm.phase == "complete" {
                 completionOverlay
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: vm.toolToast)
         .background(Color.black)
     }
 
@@ -80,26 +106,46 @@ struct GameView: View {
     }
 
     @ViewBuilder
+    private var toolChip: some View {
+        if let held = vm.heldTool, let td = GameContent.tools[held] {
+            Label(td.label, systemImage: td.symbol)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(Color(uiColor: td.color).opacity(0.85), in: Capsule())
+        } else {
+            Label("Hands - find a tool", systemImage: "hand.raised.fill")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.white.opacity(0.9))
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(.gray.opacity(0.6), in: Capsule())
+        }
+    }
+
+    @ViewBuilder
     private var repairButton: some View {
         if let part = vm.activePart {
+            let td = GameContent.tools[part.tool]
+            let hasTool = vm.heldTool == part.tool
             VStack(spacing: 8) {
                 Text(part.label)
                     .font(.caption.weight(.bold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 10).padding(.vertical, 4)
-                    .background(.orange.opacity(0.85), in: Capsule())
+                    .background((hasTool ? Color.orange : Color.gray).opacity(0.85), in: Capsule())
                 ProgressView(value: vm.activePartProgress)
                     .tint(.orange)
                     .frame(width: 90)
-                Text(vm.isRepairing ? "FIXING..." : "HOLD TO FIX")
+                Text(vm.isRepairing ? "FIXING..." : (hasTool ? "HOLD TO FIX" : "NEED \(td?.label.uppercased() ?? "TOOL")"))
                     .font(.caption2.weight(.heavy))
-                    .foregroundStyle(.white.opacity(0.9))
-                Image(systemName: "wrench.and.screwdriver.fill")
+                    .foregroundStyle(vm.wrongToolFlash ? Color.red : Color.white.opacity(0.9))
+                Image(systemName: td?.symbol ?? "wrench.and.screwdriver.fill")
                     .font(.system(size: 30))
                     .foregroundStyle(.white)
                     .frame(width: 86, height: 86)
-                    .background(vm.isRepairing ? Color.green : Color.orange, in: Circle())
+                    .background(vm.isRepairing ? Color.green : (hasTool ? Color.orange : Color.gray), in: Circle())
                     .shadow(radius: 8)
+                    .scaleEffect(vm.wrongToolFlash ? 0.92 : 1.0)
                     .gesture(
                         DragGesture(minimumDistance: 0)
                             .onChanged { _ in vm.setRepairing(true) }
@@ -155,16 +201,27 @@ struct SceneViewBridge: UIViewRepresentable {
         let v = SCNView()
         v.scene = controller.scene
         v.backgroundColor = .black
-        v.antialiasingMode = .multisampling2X
+        v.antialiasingMode = .multisampling4X
         v.delegate = context.coordinator
         v.isPlaying = true
         v.preferredFramesPerSecond = 60
 
         let cam = SCNNode()
         cam.camera = SCNCamera()
-        cam.camera?.fieldOfView = 62
+        cam.camera?.fieldOfView = 68
         cam.camera?.zNear = 0.05
         cam.camera?.zFar = 60
+        // filmic-ish response: HDR + gentle bloom + vignette
+        cam.camera?.wantsHDR = true
+        cam.camera?.wantsExposureAdaptation = true
+        cam.camera?.bloomThreshold = 0.85
+        cam.camera?.bloomIntensity = 0.7
+        cam.camera?.bloomBlurRadius = 8
+        cam.camera?.saturation = 1.08
+        cam.camera?.contrast = 1.06
+        cam.camera?.vignettingPower = 1.1
+        cam.camera?.vignettingIntensity = 0.4
+        cam.camera?.motionBlurIntensity = 0.25
         v.pointOfView = cam
         context.coordinator.camNode = cam
 
@@ -186,10 +243,13 @@ struct SceneViewBridge: UIViewRepresentable {
             self.cameraYaw = cameraYaw
         }
 
+        var pitch: Float = 0
+
         @objc func handlePan(_ g: UIPanGestureRecognizer) {
             let t = g.translation(in: g.view)
             cameraYaw.wrappedValue = controller.cameraYaw
-            controller.cameraYaw -= Float(t.x) * 0.008
+            controller.cameraYaw -= Float(t.x) * 0.006
+            pitch = max(-1.1, min(1.1, pitch - Float(t.y) * 0.006))
             g.setTranslation(.zero, in: g.view)
         }
 
@@ -199,26 +259,12 @@ struct SceneViewBridge: UIViewRepresentable {
             guard dt > 0 else { return }
             NotificationCenter.default.post(name: .gameTick, object: nil, userInfo: ["dt": dt])
 
-            // third-person camera: behind the player at yaw, framing player AND car.
-            // look target is biased toward the car center so repairs stay in frame.
+            // first-person camera: at the player's head, yaw + pitch from the drag
             let yaw = controller.cameraYaw
-            let dist: Float = 4.6
-            let height: Float = 4.6
-            let px = controller.localPosition.x
-            let pz = controller.localPosition.z
-            // clamp inside the garage shell so walls never swallow the camera
-            let rawCx = px - sinf(yaw) * dist
-            let rawCz = pz - cosf(yaw) * dist
-            let cx = max(-7.8, min(7.8, rawCx))
-            let cz = max(-5.8, min(5.8, rawCz))
-            camNode?.position = SCNVector3(cx, height, cz)
-            // when the wall clamp kicks in the camera sits almost above the player;
-            // aim straight at them so they never leave the frame
-            if abs(rawCx - cx) > 0.01 || abs(rawCz - cz) > 0.01 {
-                camNode?.look(at: SCNVector3(px, 1.0, pz))
-            } else {
-                camNode?.look(at: SCNVector3(px * 0.35, 0.7, pz * 0.35))
-            }
+            camNode?.position = SCNVector3(controller.localPosition.x, 1.32, controller.localPosition.z)
+            // yaw about world Y, then pitch about the yawed X axis (FPS convention)
+            let q = simd_quatf(angle: yaw, axis: SIMD3<Float>(0, 1, 0)) * simd_quatf(angle: pitch, axis: SIMD3<Float>(1, 0, 0))
+            camNode?.orientation = SCNQuaternion(q.vector.x, q.vector.y, q.vector.z, q.vector.w)
         }
     }
 }

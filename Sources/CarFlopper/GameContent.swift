@@ -10,6 +10,20 @@ struct PartDef {
     let y: Float
     let z: Float
     let seconds: Float // solo repair time
+    let tool: String   // required tool id from GameContent.tools
+}
+
+struct ToolDef {
+    let id: String
+    let label: String
+    let symbol: String // SF Symbol for the HUD
+    let color: UIColor
+}
+
+struct ToolStation {
+    let tool: String
+    let x: Float
+    let z: Float
 }
 
 struct CarDef {
@@ -42,14 +56,14 @@ enum GameContent {
 
     static func parts(wheelsMissing: Bool) -> [PartDef] {
         var list = [
-            PartDef(id: "wheelFL", label: "Front left wheel", x: -0.90, y: 0.36, z: 1.30, seconds: 7),
-            PartDef(id: "wheelFR", label: "Front right wheel", x: 0.90, y: 0.36, z: 1.30, seconds: 7),
-            PartDef(id: "wheelRL", label: "Rear left wheel", x: -0.90, y: 0.36, z: -1.30, seconds: 7),
-            PartDef(id: "wheelRR", label: "Rear right wheel", x: 0.90, y: 0.36, z: -1.30, seconds: 7),
-            PartDef(id: "engine", label: "Engine", x: 0.0, y: 0.85, z: 1.45, seconds: 12),
-            PartDef(id: "door", label: "Driver door", x: -0.95, y: 0.72, z: -0.05, seconds: 9),
-            PartDef(id: "windshield", label: "Windshield", x: 0.0, y: 1.02, z: 0.55, seconds: 9),
-            PartDef(id: "exhaust", label: "Exhaust", x: 0.35, y: 0.28, z: -2.05, seconds: 8),
+            PartDef(id: "wheelFL", label: "Front left wheel", x: -0.90, y: 0.36, z: 1.30, seconds: 7, tool: "wrench"),
+            PartDef(id: "wheelFR", label: "Front right wheel", x: 0.90, y: 0.36, z: 1.30, seconds: 7, tool: "wrench"),
+            PartDef(id: "wheelRL", label: "Rear left wheel", x: -0.90, y: 0.36, z: -1.30, seconds: 7, tool: "wrench"),
+            PartDef(id: "wheelRR", label: "Rear right wheel", x: 0.90, y: 0.36, z: -1.30, seconds: 7, tool: "wrench"),
+            PartDef(id: "engine", label: "Engine", x: 0.0, y: 0.85, z: 1.45, seconds: 12, tool: "diagnostics"),
+            PartDef(id: "door", label: "Driver door", x: -0.95, y: 0.72, z: -0.05, seconds: 9, tool: "screwdriver"),
+            PartDef(id: "windshield", label: "Windshield", x: 0.0, y: 1.02, z: 0.55, seconds: 9, tool: "screwdriver"),
+            PartDef(id: "exhaust", label: "Exhaust", x: 0.35, y: 0.28, z: -2.05, seconds: 8, tool: "welder"),
         ]
         if wheelsMissing { /* same list; visual handled per car */ }
         return list
@@ -69,4 +83,25 @@ enum GameContent {
 
     static let repairReach: Float = 2.3
     static let coopBonus: Float = 0.7 // each extra player on same part adds 70% speed
+
+    static let tools: [String: ToolDef] = [
+        "wrench": ToolDef(id: "wrench", label: "Wrench", symbol: "wrench.fill",
+                          color: UIColor(red: 1.00, green: 0.62, blue: 0.10, alpha: 1)),
+        "screwdriver": ToolDef(id: "screwdriver", label: "Screwdriver", symbol: "screwdriver.fill",
+                               color: UIColor(red: 0.30, green: 0.60, blue: 1.00, alpha: 1)),
+        "welder": ToolDef(id: "welder", label: "Welder", symbol: "bolt.fill",
+                          color: UIColor(red: 0.25, green: 0.90, blue: 1.00, alpha: 1)),
+        "diagnostics": ToolDef(id: "diagnostics", label: "Diagnostics", symbol: "waveform.path.ecg",
+                               color: UIColor(red: 0.75, green: 0.45, blue: 1.00, alpha: 1)),
+    ]
+
+    // where each tool lives in the garage - walk into the ring to equip
+    static let toolStations: [ToolStation] = [
+        ToolStation(tool: "wrench", x: 5.6, z: -3.5),      // by the tire stack
+        ToolStation(tool: "screwdriver", x: -3.5, z: -4.2), // on the workbench
+        ToolStation(tool: "welder", x: 4.6, z: -4.3),       // by the tool cabinet
+        ToolStation(tool: "diagnostics", x: 6.8, z: 2.8),   // on the rolling cart
+    ]
+
+    static let toolPickupReach: Float = 1.3
 }

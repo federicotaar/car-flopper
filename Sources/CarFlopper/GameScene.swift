@@ -13,7 +13,7 @@ final class GameSceneController: NSObject {
     var localId: String
     var localPosition = SCNVector3(0, 0, 3.5)
     var localHeading: Float = .pi // facing -z toward car
-    var cameraYaw: Float = .pi // start behind the player, who faces the car (-z)
+    var cameraYaw: Float = 0 // first person: looking -z, straight at the car
 
     private var lastSnapshot: RoomSnapshot?
     private var celebrateNode: SCNNode?
@@ -83,6 +83,7 @@ final class GameSceneController: NSObject {
             scene.rootNode.addChildNode(av.root)
             avatars[localId] = av
             av.label.isHidden = true
+            av.root.isHidden = true // first person: never render our own body
         }
         let av = avatars[localId]!
         av.root.position = localPosition

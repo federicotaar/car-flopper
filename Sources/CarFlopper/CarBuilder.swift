@@ -22,8 +22,9 @@ final class CarAssembly {
     }
 
     private func build() {
-        let body = Mat.flat(def.bodyRGB.0, def.bodyRGB.1, def.bodyRGB.2, rough: 0.35, metal: 0.5)
-        let accent = Mat.flat(def.accentRGB.0, def.accentRGB.1, def.accentRGB.2, rough: 0.6, metal: 0.3)
+        let body = Mat.flat(def.bodyRGB.0, def.bodyRGB.1, def.bodyRGB.2, rough: 0.25, metal: 0.85)
+        body.specular.contents = UIColor(white: 0.9, alpha: 1)
+        let accent = Mat.flat(def.accentRGB.0, def.accentRGB.1, def.accentRGB.2, rough: 0.5, metal: 0.6)
 
         // main tub
         let tub = box(1.75, 0.55, 4.0, 0.12, [body])
@@ -77,7 +78,55 @@ final class CarAssembly {
             (hl.geometry as? SCNSphere)?.materials = [m]
             hl.position = SCNVector3(dx, 0.62, 2.02)
             root.addChildNode(hl)
+            let bezel = SCNNode(geometry: SCNTorus(ringRadius: 0.13, pipeRadius: 0.025))
+            bezel.position = SCNVector3(dx, 0.62, 2.04)
+            (bezel.geometry as? SCNTorus)?.materials = [Mat.chrome]
+            root.addChildNode(bezel)
         }
+
+        // grille with chrome slats
+        let grille = box(0.9, 0.16, 0.05, 0.02, [Mat.steelDark])
+        grille.position = SCNVector3(0, 0.62, 2.03)
+        root.addChildNode(grille)
+        for i in 0..<3 {
+            let slat = box(0.84, 0.02, 0.02, 0.005, [Mat.chrome])
+            slat.position = SCNVector3(0, 0.58 + Float(i) * 0.05, 2.06)
+            root.addChildNode(slat)
+        }
+
+        // taillights
+        for dx in [-0.62, 0.62] as [Float] {
+            let tl = box(0.30, 0.10, 0.05, 0.02, {
+                let m = SCNMaterial()
+                m.emission.contents = UIColor(red: 0.9, green: 0.08, blue: 0.08, alpha: 1)
+                m.diffuse.contents = UIColor.black
+                return [m]
+            }())
+            tl.position = SCNVector3(dx, 0.62, -2.01)
+            root.addChildNode(tl)
+        }
+
+        // side mirrors
+        for sx in [-1, 1] as [Float] {
+            let stalk = box(0.04, 0.04, 0.14, 0.01, [accent])
+            stalk.position = SCNVector3(sx * 0.93, 0.98, 0.42)
+            root.addChildNode(stalk)
+            let mirror = box(0.05, 0.12, 0.18, 0.02, [body])
+            mirror.position = SCNVector3(sx * 0.99, 0.99, 0.48)
+            root.addChildNode(mirror)
+        }
+
+        // door handles
+        for sx in [-1, 1] as [Float] {
+            let handle = box(0.03, 0.04, 0.22, 0.01, [Mat.chrome])
+            handle.position = SCNVector3(sx * 0.90, 0.78, -0.35)
+            root.addChildNode(handle)
+        }
+
+        // rear plate
+        let plate = box(0.42, 0.13, 0.02, 0.01, [Mat.flat(0.92, 0.92, 0.88, rough: 0.6)])
+        plate.position = SCNVector3(0, 0.42, -2.18)
+        root.addChildNode(plate)
 
         // exhaust (part)
         let ex = SCNNode(geometry: SCNCylinder(radius: 0.07, height: 0.5))
@@ -100,9 +149,15 @@ final class CarAssembly {
             tire.eulerAngles.z = .pi / 2
             wheel.addChildNode(tire)
             let rim = SCNNode(geometry: SCNCylinder(radius: 0.19, height: 0.26))
-            (rim.geometry as? SCNCylinder)?.materials = [Mat.steel]
+            (rim.geometry as? SCNCylinder)?.materials = [Mat.steelDark]
             rim.eulerAngles.z = .pi / 2
             wheel.addChildNode(rim)
+            for i in 0..<5 {
+                let spoke = SCNNode(geometry: SCNBox(width: 0.05, height: 0.30, length: 0.06, chamferRadius: 0.01))
+                (spoke.geometry as? SCNBox)?.materials = [Mat.chrome]
+                spoke.eulerAngles.x = Float(i) * .pi / 5
+                wheel.addChildNode(spoke)
+            }
             wheel.position = SCNVector3(x, 0.36, z)
             root.addChildNode(wheel)
             partNodes[id] = wheel
@@ -124,7 +179,7 @@ final class CarAssembly {
         for p in def.parts {
             let marker = SCNNode(geometry: SCNPyramid(width: 0.24, height: 0.24, length: 0.24))
             let m = SCNMaterial()
-            m.emission.contents = UIColor(red: 1, green: 0.15, blue: 0.1, alpha: 1)
+            m.emission.contents = GameContent.tools[p.tool]?.color ?? UIColor(red: 1, green: 0.15, blue: 0.1, alpha: 1)
             m.diffuse.contents = UIColor.black
             (marker.geometry as? SCNPyramid)?.materials = [m]
             marker.position = SCNVector3(p.x, p.y + 0.85, p.z)
@@ -155,7 +210,7 @@ final class CarAssembly {
             node.scale = SCNVector3(1, fixed ? 1 : 0.55, 1)
         } else if id == "door" {
             if !fixed { node.geometry?.materials = [Mat.flat(def.bodyRGB.0 * 0.4, def.bodyRGB.1 * 0.4, def.bodyRGB.2 * 0.4, rough: 0.9)] ; node.eulerAngles.y = 0.5 }
-            else { node.geometry?.materials = [Mat.flat(def.bodyRGB.0, def.bodyRGB.1, def.bodyRGB.2, rough: 0.35, metal: 0.5)]; node.eulerAngles.y = 0 }
+            else { node.geometry?.materials = [Mat.flat(def.bodyRGB.0, def.bodyRGB.1, def.bodyRGB.2, rough: 0.25, metal: 0.85)]; node.eulerAngles.y = 0 }
         }
         _ = brokenTint
     }
@@ -223,7 +278,7 @@ final class AvatarNode {
         root.addChildNode(label)
     }
 
-    private static func makeLabelImage(name: String, color: UIColor) -> UIImage {
+    static func makeLabelImage(name: String, color: UIColor) -> UIImage {
         let size = CGSize(width: 280, height: 64)
         let r = UIGraphicsImageRenderer(size: size)
         return r.image { ctx in
