@@ -386,19 +386,24 @@ final class CarAssembly {
 
         // repair markers: small halo rings hugging the broken part, one slow
         // spin + gentle pulse, colored per required tool. No floating pyramids.
-        let haloLift: [String: Float] = ["exhaust": 0.16, "engine": 0.32, "windshield": 0.30]
+        let haloLift: [String: Float] = ["exhaust": 0.30, "engine": 0.42, "windshield": 0.40]
         for p in def.parts {
             guard let anchor = partNodes[p.id] else { continue }
             let holder = SCNNode()
-            holder.position = SCNVector3(anchor.position.x, anchor.position.y + (haloLift[p.id] ?? 0.30), anchor.position.z)
+            holder.position = SCNVector3(anchor.position.x, anchor.position.y + (haloLift[p.id] ?? 0.40), anchor.position.z)
             let ring = SCNNode(geometry: SCNTorus(ringRadius: 0.14, pipeRadius: 0.013))
             let m = SCNMaterial()
             m.emission.contents = GameContent.tools[p.tool]?.color ?? UIColor(red: 1, green: 0.15, blue: 0.1, alpha: 1)
             m.diffuse.contents = UIColor.black
             (ring.geometry as? SCNTorus)?.materials = [m]
-            ring.eulerAngles.x = .pi / 2
-            holder.addChildNode(ring)
-            holder.runAction(.repeatForever(.rotateBy(x: 0, y: .pi * 2, z: 0, duration: 3.2)))
+            ring.eulerAngles.x = .pi / 2 // stand the flat torus up, facing +/-z
+            // billboard carrier: the ring always faces the camera as a full circle,
+            // so body panels no longer slice it into broken arcs. Depth testing
+            // stays ON: a part hidden behind the car keeps its marker hidden too.
+            let face = SCNNode()
+            face.constraints = [SCNBillboardConstraint()]
+            face.addChildNode(ring)
+            holder.addChildNode(face)
             ring.runAction(.repeatForever(.sequence([
                 .scale(to: 1.18, duration: 0.8),
                 .scale(to: 1.0, duration: 0.8),
