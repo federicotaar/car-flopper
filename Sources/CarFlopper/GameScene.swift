@@ -42,6 +42,24 @@ final class GameSceneController: NSObject {
 
     private var lastSnapshot: RoomSnapshot?
     private var celebrateNode: SCNNode?
+    private var handRig: HandRig?
+
+    // first-person hand: lives on the camera node, animated from the render
+    // callback (the only race-free mutation point). Requests from the game
+    // logic thread are stashed inside the rig and consumed per frame.
+    private weak var handCam: SCNNode?
+    func attachHandIfNeeded(to cam: SCNNode) {
+        if handRig == nil { handRig = HandRig() }
+        guard handCam !== cam, let rig = handRig else { return }
+        rig.root.removeFromParentNode()
+        cam.addChildNode(rig.root)
+        handCam = cam
+    }
+    func equipHandTool(_ tool: String) { handRig?.requestEquip(tool) }
+    func setHandWorking(_ on: Bool, tool: String?) { handRig?.setWorking(on, tool: tool) }
+    func updateHand(dt: Float, move: Float, yawVel: Float, pitchVel: Float) {
+        handRig?.update(dt: dt, move: move, yawVel: yawVel, pitchVel: pitchVel)
+    }
 
     var carIndex: Int = 0
 
