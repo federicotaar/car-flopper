@@ -30,10 +30,19 @@ struct GameView: View {
             var round = 0
             var targetPart: String? = nil
             var roundLabel = ""
+            var roundIndex = 0
             let plan: [(stationTool: String, partId: String, label: String)] = [
                 ("diagnostics", "engine", "diagnostics round"),
                 ("wrench", "", "repair round"),   // part resolved at hold time
+                ("screwdriver", "", "screwdriver round"),
             ]
+            // camera convention: view dir is (-sin yaw, 0, -cos yaw), so facing
+            // (dx,dz) needs yaw = atan2(-dx,-dz) - the old atan2(dx,dz) pointed
+            // the capture exactly AWAY from the part, at the garage walls
+            func faceTarget(_ tx: Float, _ tz: Float, from fx: Float, _ fz: Float, pitch: Float?) {
+                vm.sceneCtrl.cameraYaw = atan2f(fx - tx, fz - tz)
+                vm.sceneCtrl.cameraPitchOverride = pitch
+            }
             func startRound(_ i: Int) {
                 guard i < plan.count else { return }
                 let r = plan[i]
@@ -41,7 +50,13 @@ struct GameView: View {
                 round = 1
                 guard let st = GameContent.toolStations.first(where: { $0.tool == r.stationTool }) ?? GameContent.toolStations.first(where: { $0.tool != plan[0].stationTool }) else { NSLog("[CFREPAIR] FAIL no station for \(r.stationTool)"); return }
                 NSLog("[CFREPAIR] \(roundLabel): stepping into \(r.stationTool) station")
-                vm.sceneCtrl.localPosition = SCNVector3(st.x, 0, st.z)
+                // stand back toward the garage center (still inside pickup
+                // reach) facing the station, so the equip reach is on camera
+                let sl = max(0.001, hypotf(st.x, st.z))
+                let spx = st.x - st.x / sl * 0.85
+                let spz = st.z - st.z / sl * 0.85
+                vm.sceneCtrl.localPosition = SCNVector3(spx, 0, spz)
+                faceTarget(st.x, st.z, from: spx, spz, pitch: -0.30)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
                     // stations sit within pickup reach of each other on the
                     // bench, so accept whichever tool the proximity tick
@@ -55,12 +70,14 @@ struct GameView: View {
                     // stand OUTSIDE the car relative to the part: +0.5,+0.5 can
                     // land nearer a different broken part (exhaust vs wheelRR)
                     // and the wrong-tool flash then silently blocks the hold
-                    let away: Float = 0.6
+                    let away: Float = 1.0
                     let len = max(0.001, hypotf(part.x, part.z))
                     let px = part.x + part.x / len * away
                     let pz = part.z + part.z / len * away
                     vm.sceneCtrl.localPosition = SCNVector3(px, 0, pz)
-                    vm.sceneCtrl.cameraYaw = atan2f(part.x - px, part.z - pz)
+                    // face the part and pitch down to its hotspot height so the
+                    // hold shows the hand working on the part in view
+                    faceTarget(part.x, part.z, from: px, pz, pitch: -atan2f(1.32 - part.y, away + 0.35))
                     NSLog("[CFREPAIR] \(roundLabel): holding fix on \(part.id)")
                     vm.setRepairing(true)
                 }
@@ -77,9 +94,10 @@ struct GameView: View {
                     targetPart = nil
                     progressSeen = false
                     round = 3
-                    let next = roundLabel == plan[0].label ? 1 : 2
-                    if next < plan.count {
-                        startRound(next)
+                    vm.sceneCtrl.cameraPitchOverride = nil
+                    roundIndex += 1
+                    if roundIndex < plan.count {
+                        startRound(roundIndex)
                     } else {
                         NSLog("[CFREPAIR] all rounds OK")
                         t.invalidate()
