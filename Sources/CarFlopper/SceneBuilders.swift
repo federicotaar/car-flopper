@@ -349,9 +349,14 @@ enum GarageBuilder {
         key.color = UIColor(red: 0.98, green: 0.97, blue: 0.94, alpha: 1)
         key.intensity = 850
         key.castsShadow = true
+#if targetEnvironment(simulator)
+        key.shadowMapSize = CGSize(width: 1024, height: 1024)
+        key.shadowSampleCount = 8
+#else
         key.shadowMapSize = CGSize(width: 2048, height: 2048)
-        key.shadowRadius = 5
         key.shadowSampleCount = 12
+#endif
+        key.shadowRadius = 4
         key.shadowColor = UIColor(white: 0, alpha: 0.5)
         key.orthographicScale = 12
         key.zNear = 2

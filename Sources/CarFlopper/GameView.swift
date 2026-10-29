@@ -12,11 +12,11 @@ struct GameView: View {
         #if AUTODRIVE
         guard ProcessInfo.processInfo.arguments.contains("-CFAutoDrive") else { return }
         print("[CFAUTODRIVE] garage appeared")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { vm.joystick = CGVector(dx: 0, dy: -1); print("[CFAUTODRIVE] walk forward") }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) { vm.joystick = CGVector(dx: 1, dy: -0.25); print("[CFAUTODRIVE] strafe right") }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 9.0) { vm.joystick = .zero; print("[CFAUTODRIVE] walk stop") }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10.5) { vm.sceneCtrl.cameraYaw = 0.9; print("[CFAUTODRIVE] look at bench") }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 14.0) { vm.sceneCtrl.cameraYaw = -0.7; print("[CFAUTODRIVE] look at bay") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { vm.joystick = CGVector(dx: 0, dy: -1); print("[CFAUTODRIVE] walk forward") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 12.0) { vm.joystick = CGVector(dx: 1, dy: -0.25); print("[CFAUTODRIVE] strafe right") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15.0) { vm.joystick = .zero; print("[CFAUTODRIVE] walk stop") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 18.0) { vm.sceneCtrl.cameraYaw = 0.9; print("[CFAUTODRIVE] look at bench") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 24.0) { vm.sceneCtrl.cameraYaw = -0.7; print("[CFAUTODRIVE] look at bay") }
         #endif
     }
 
@@ -201,10 +201,17 @@ struct SceneViewBridge: UIViewRepresentable {
         let v = SCNView()
         v.scene = controller.scene
         v.backgroundColor = .black
+#if targetEnvironment(simulator)
+        // simulator renders in software: keep the scene content identical but
+        // lower the throughput cost so CI can capture real frames
+        v.antialiasingMode = .multisampling2X
+        v.preferredFramesPerSecond = 30
+#else
         v.antialiasingMode = .multisampling4X
+        v.preferredFramesPerSecond = 60
+#endif
         v.delegate = context.coordinator
         v.isPlaying = true
-        v.preferredFramesPerSecond = 60
 
         let cam = SCNNode()
         cam.camera = SCNCamera()
@@ -221,7 +228,6 @@ struct SceneViewBridge: UIViewRepresentable {
         cam.camera?.contrast = 1.06
         cam.camera?.vignettingPower = 1.1
         cam.camera?.vignettingIntensity = 0.4
-        cam.camera?.motionBlurIntensity = 0.25
         v.pointOfView = cam
         context.coordinator.camNode = cam
 
