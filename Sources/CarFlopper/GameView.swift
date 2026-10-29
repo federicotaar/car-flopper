@@ -12,11 +12,22 @@ struct GameView: View {
         #if AUTODRIVE
         guard ProcessInfo.processInfo.arguments.contains("-CFAutoDrive") else { return }
         print("[CFAUTODRIVE] garage appeared")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { vm.joystick = CGVector(dx: 0, dy: -1); print("[CFAUTODRIVE] walk forward") }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 12.0) { vm.joystick = CGVector(dx: 1, dy: -0.25); print("[CFAUTODRIVE] strafe right") }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 15.0) { vm.joystick = .zero; print("[CFAUTODRIVE] walk stop") }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 18.0) { vm.sceneCtrl.cameraYaw = 0.9; print("[CFAUTODRIVE] look at bench") }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 24.0) { vm.sceneCtrl.cameraYaw = -0.7; print("[CFAUTODRIVE] look at bay") }
+        // showcase orbit: closed-loop strafe around the car through the normal
+        // joystick movement pipeline (moveLocal clamps, heading, network sync),
+        // facing the car the whole time. Player position changes continuously
+        // across every capture: real walking, not just a camera pan.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
+            print("[CFAUTODRIVE] orbit start")
+            Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+                let p = vm.sceneCtrl.localPosition
+                // face the car center: camera forward is (-sin yaw, -cos yaw)
+                vm.sceneCtrl.cameraYaw = atan2f(p.x, p.z)
+                // keep orbit radius in [2.9, 3.4] so we never grind the car or the walls
+                let r = hypotf(p.x, p.z)
+                let inward: Float = r > 3.4 ? 0.35 : (r < 2.9 ? -0.35 : 0.0)
+                vm.joystick = CGVector(dx: 0.7, dy: -inward)
+            }
+        }
         #endif
     }
 
