@@ -1,0 +1,88 @@
+name: Build unsigned IPA
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'server/**'
+      - 'assets/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-ipa
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)/Contents/Developer"
+          xcodebuild -version
+          swift --version
+
+      - name: Install xtool
+        run: |
+          set -e
+          for i in 1 2 3; do
+            curl -fSL --retry 3 -o /tmp/xtool.app.zip https://github.com/xtool-org/xtool/releases/download/1.17.0/xtool.app.zip && break
+            sleep 5
+          done
+          ditto -x -k /tmp/xtool.app.zip /tmp/xtool
+          echo "/tmp/xtool/xtool.app/Contents/Resources/bin" >> "$GITHUB_PATH"
+          xtool --version || true
+
+      - name: Generate app icon
+        run: |
+          set -e
+          mkdir -p Resources
+          base64 -D -i assets/icon.b64 -o Resources/icon1024.png
+          sips -z 120 120 Resources/icon1024.png --out "Resources/AppIcon60x60@2x.png"
+          sips -z 180 180 Resources/icon1024.png --out "Resources/AppIcon60x60@3x.png"
+          ls -la Resources
+
+      - name: Stamp release version into Info plist
+        run: |
+          BUILD_TAG="$(/usr/libexec/PlistBuddy -c 'Print :CarFlopperReleaseLabel' CarFlopper-Info.plist 2>/dev/null || true)"
+          if [ -n "$BUILD_TAG" ]; then
+            SHORT="$(echo "$BUILD_TAG" | cut -d. -f1-3)"
+            VINT="$(echo "$BUILD_TAG" | awk -F. '{printf "%02d%02d",$3,$4}')"
+            /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $SHORT" CarFlopper-Info.plist
+            /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VINT" CarFlopper-Info.plist
+          fi
+
+      - name: Build unsigned IPA
+        run: |
+          set -e
+          xtool dev build --ipa -c release
+          ls -la xtool/
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CarFlopper-unsigned-ipa
+          path: xtool/*.ipa
+
+      - name: Publish release with IPA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          IPA="$(ls xtool/*.ipa | head -n1)"
+          BUILD_TAG="$(/usr/libexec/PlistBuddy -c 'Print :CarFlopperReleaseLabel' CarFlopper-Info.plist 2>/dev/null || true)"
+          if [ -z "$BUILD_TAG" ]; then BUILD_TAG="dev.${{ github.run_number }}"; fi
+          REL="v$BUILD_TAG"
+          if gh release view "$REL" >/dev/null 2>&1; then
+            echo "Release $REL already published; bump CarFlopperReleaseLabel for a new one."
+            exit 0
+          fi
+          gh release create "$REL" --title "Car Flopper $BUILD_TAG (unsigned ipa)" --notes "Unsigned IPA. Install/update with AltStore or Sideloadly over the existing app. Server: separate Cloudflare Worker (free tier). Status: first playable build."
+          cp "$IPA" CarFlopper.ipa
+          gh release upload "$REL" "$IPA" "CarFlopper-$BUILD_TAG.ipa" "CarFlopper.ipa"
