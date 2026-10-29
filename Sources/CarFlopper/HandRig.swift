@@ -30,6 +30,7 @@ final class HandRig {
     // cross-thread requests (main -> render), consumed in update
     private let reqLock = NSLock()
     private var pendingEquip: String?
+    private var pendingEquipWorld: SCNVector3?
     private var pendingWorking: (on: Bool, tool: String?)?
 
     private enum Mode { case idle, equip, working }
@@ -205,8 +206,8 @@ final class HandRig {
 
     // MARK: - requests (any thread)
 
-    func requestEquip(_ tool: String) {
-        reqLock.lock(); pendingEquip = tool; reqLock.unlock()
+    func requestEquip(_ tool: String, fromWorld: SCNVector3? = nil) {
+        reqLock.lock(); pendingEquip = tool; pendingEquipWorld = fromWorld; reqLock.unlock()
     }
     func setWorking(_ on: Bool, tool: String?) {
         reqLock.lock(); pendingWorking = (on, tool); reqLock.unlock()
@@ -222,6 +223,7 @@ final class HandRig {
 
         reqLock.lock()
         let eq = pendingEquip; pendingEquip = nil
+        let eqWorld = pendingEquipWorld; pendingEquipWorld = nil
         let wk = pendingWorking; pendingWorking = nil
         reqLock.unlock()
 
@@ -229,6 +231,14 @@ final class HandRig {
             _equipTool = tool
             mode = .equip
             equipT = 0
+            // pickup reach aims at the actual station tool when the caller
+            // knows where it is, clamped to arm's length in camera space
+            if let w = eqWorld, let cam = root.parent {
+                var t = cam.convertPosition(w, from: nil)
+                let L = sqrtf(t.x * t.x + t.y * t.y + t.z * t.z)
+                if L > 0.55 { let s = 0.55 / L; t = SCNVector3(t.x * s, t.y * s, t.z * s) }
+                equipLocalTarget = t
+            } else { equipLocalTarget = nil }
         }
         if let w = wk {
             if w.on, let t = w.tool {
@@ -269,7 +279,7 @@ final class HandRig {
             let T: Float = 0.85
             let p = min(1, equipT / T)
             // out-down toward the station, then back with the tool
-            let out = SCNVector3(0.0, -0.24, -0.40)
+            let out = equipLocalTarget ?? SCNVector3(0.0, -0.24, -0.40)
             let k: Float = p < 0.4 ? (p / 0.4) : (1 - (p - 0.4) / 0.6)
             let e = k * k * (3 - 2 * k) // smoothstep
             target = SCNVector3(restPos.x + (out.x - restPos.x) * e,
@@ -327,6 +337,7 @@ final class HandRig {
     // the equip request carries the tool id; stashed so the timeline can
     // reveal it mid-animation (hand closed -> tool appears)
     private var _equipTool: String?
+    private var equipLocalTarget: SCNVector3?
 
     private func showTool(_ tool: String) {
         for (id, n) in toolNodes { n.isHidden = (id != tool) }
