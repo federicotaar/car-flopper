@@ -52,8 +52,15 @@ struct GameView: View {
                     guard let part else { NSLog("[CFREPAIR] FAIL no part for \(roundLabel)"); return }
                     targetPart = part.id
                     round = 2
-                    vm.sceneCtrl.localPosition = SCNVector3(part.x + 0.5, 0, part.z + 0.5)
-                    vm.sceneCtrl.cameraYaw = atan2f(0.5, 0.5)
+                    // stand OUTSIDE the car relative to the part: +0.5,+0.5 can
+                    // land nearer a different broken part (exhaust vs wheelRR)
+                    // and the wrong-tool flash then silently blocks the hold
+                    let away: Float = 0.6
+                    let len = max(0.001, hypotf(part.x, part.z))
+                    let px = part.x + part.x / len * away
+                    let pz = part.z + part.z / len * away
+                    vm.sceneCtrl.localPosition = SCNVector3(px, 0, pz)
+                    vm.sceneCtrl.cameraYaw = atan2f(part.x - px, part.z - pz)
                     NSLog("[CFREPAIR] \(roundLabel): holding fix on \(part.id)")
                     vm.setRepairing(true)
                 }
