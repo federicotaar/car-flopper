@@ -1,0 +1,75 @@
+name: Simulator screenshots
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: simshots
+  cancel-in-progress: false
+
+jobs:
+  shots:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install xtool
+        run: |
+          set -e
+          for i in 1 2 3; do
+            curl -fSL --retry 3 -o /tmp/xtool.app.zip https://github.com/xtool-org/xtool/releases/download/1.17.0/xtool.app.zip && break
+            sleep 5
+          done
+          ditto -x -k /tmp/xtool.app.zip /tmp/xtool
+          echo "/tmp/xtool/xtool.app/Contents/Resources/bin" >> "$GITHUB_PATH"
+
+      - name: Generate app icon
+        run: |
+          set -e
+          mkdir -p Resources
+          base64 -D -i assets/icon.b64 -o Resources/icon1024.png
+          sips -z 120 120 Resources/icon1024.png --out "Resources/AppIcon60x60@2x.png"
+          sips -z 180 180 Resources/icon1024.png --out "Resources/AppIcon60x60@3x.png"
+
+      - name: Boot an iPhone simulator
+        run: |
+          set -e
+          xcrun simctl list runtimes
+          RUNTIME=$(xcrun simctl list runtimes -j | jq -r '[.runtimes[] | select(.platform=="iOS" and .isAvailable)] | last | .identifier')
+          echo "Using runtime: $RUNTIME"
+          DEV=$(xcrun simctl list devicetypes -j | jq -r '[.devicetypes[] | select(.name | test("iPhone 1[5-9]|iPhone [2-9]"))] | first | .identifier')
+          echo "Using device type: $DEV"
+          xcrun simctl create cf-shot "$DEV" "$RUNTIME"
+          xcrun simctl boot cf-shot
+          xcrun simctl bootstatus cf-shot -b
+
+      - name: Build for simulator
+        run: |
+          set -e
+          xtool dev build --simulator -c release
+          echo "---- build output ----"
+          find . -name "*.app" -maxdepth 4
+
+      - name: Install, launch, screenshot menu
+        run: |
+          set -e
+          APP=$(find . -name "*.app" -maxdepth 4 | head -n1)
+          echo "App bundle: $APP"
+          xcrun simctl install cf-shot "$APP"
+          xcrun simctl launch cf-shot federicotaranu.carflopper || true
+          sleep 10
+          mkdir -p shots
+          xcrun simctl io cf-shot screenshot shots/01-menu.png
+          xcrun simctl spawn cf-shot log show --last 1m --predicate 'processImagePath CONTAINS "CarFlopper"' --style compact | tail -30 || true
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: sim-screenshots
+          path: shots/*.png
