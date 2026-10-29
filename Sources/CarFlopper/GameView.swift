@@ -16,47 +16,69 @@ struct GameView: View {
         let adDebug = adArgs.contains("-CFAutoDriveDebug")
         NSLog("[CFAUTODRIVE] garage appeared")
         if adArgs.contains("-CFAutoDriveRepair") {
-            // freeze-regression mode: exercise the full repair loop (tool
-            // equip, hold-to-fix, snapshot-driven scene mutation, sparks)
-            // while a heartbeat logs; a wedged renderer or main thread shows
-            // up as missing heartbeats or no completion marker
+            // freeze-regression mode: exercise BOTH loops Fred reported -
+            // a diagnostics-tablet fix (engine) and an ordinary tool fix -
+            // each: equip at the station, hold fix, assert progress flows and
+            // the part completes. A 1s heartbeat makes a wedged renderer or
+            // main thread visible as missing beats.
             var hb = 0
             Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
                 hb += 1
                 NSLog("[CFREPAIR] heartbeat %d", hb)
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
-                guard let st = GameContent.toolStations.first else { NSLog("[CFREPAIR] FAIL no tool stations"); return }
-                NSLog("[CFREPAIR] stepping into tool station")
-                vm.sceneCtrl.localPosition = SCNVector3(st.x, 0, st.z)
-            }
+            // round state: 0 idle, 1 walking to station, 2 holding fix, 3 done
+            var round = 0
             var targetPart: String? = nil
-            DispatchQueue.main.asyncAfter(deadline: .now() + 12.0) {
-                guard let tool = vm.heldTool else { NSLog("[CFREPAIR] FAIL no tool equipped"); return }
-                NSLog("[CFREPAIR] equipped \(tool)")
-                let defs = vm.sceneCtrl.car?.def.parts ?? []
-                guard let part = defs.first(where: { $0.tool == tool && (vm.parts[$0.id]?.progress ?? 0) < 1 }) ?? defs.first else { NSLog("[CFREPAIR] FAIL no part defs"); return }
-                targetPart = part.id
-                vm.sceneCtrl.localPosition = SCNVector3(part.x + 0.5, 0, part.z + 0.5)
-                vm.sceneCtrl.cameraYaw = atan2f(0.5, 0.5)
-                NSLog("[CFREPAIR] holding fix on \(part.id)")
-                vm.setRepairing(true)
+            var roundLabel = ""
+            let plan: [(stationTool: String, partId: String, label: String)] = [
+                ("diagnostics", "engine", "diagnostics round"),
+                ("wrench", "", "repair round"),   // part resolved at hold time
+            ]
+            func startRound(_ i: Int) {
+                guard i < plan.count else { return }
+                let r = plan[i]
+                roundLabel = r.label
+                round = 1
+                guard let st = GameContent.toolStations.first(where: { $0.tool == r.stationTool }) ?? GameContent.toolStations.first(where: { $0.tool != plan[0].stationTool }) else { NSLog("[CFREPAIR] FAIL no station for \(r.stationTool)"); return }
+                NSLog("[CFREPAIR] \(roundLabel): stepping into \(r.stationTool) station")
+                vm.sceneCtrl.localPosition = SCNVector3(st.x, 0, st.z)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                    guard vm.heldTool == st.tool else { NSLog("[CFREPAIR] FAIL expected \(st.tool), holding \(vm.heldTool ?? "nothing")"); return }
+                    let defs = vm.sceneCtrl.car?.def.parts ?? []
+                    let part = r.partId.isEmpty ? defs.first(where: { $0.tool == st.tool && (vm.parts[$0.id]?.progress ?? 0) < 1 }) : defs.first(where: { $0.id == r.partId })
+                    guard let part else { NSLog("[CFREPAIR] FAIL no part for \(roundLabel)"); return }
+                    targetPart = part.id
+                    round = 2
+                    vm.sceneCtrl.localPosition = SCNVector3(part.x + 0.5, 0, part.z + 0.5)
+                    vm.sceneCtrl.cameraYaw = atan2f(0.5, 0.5)
+                    NSLog("[CFREPAIR] \(roundLabel): holding fix on \(part.id)")
+                    vm.setRepairing(true)
+                }
             }
             var progressSeen = false
-            var fixedLogged = false
-            Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+            Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { t in
                 if !progressSeen, let id = targetPart, (vm.parts[id]?.progress ?? 0) > 0 {
                     progressSeen = true
-                    NSLog("[CFREPAIR] progress flowing")
+                    NSLog("[CFREPAIR] \(roundLabel): progress flowing")
                 }
-                if !fixedLogged, let id = targetPart, (vm.parts[id]?.progress ?? 0) >= 1 {
-                    fixedLogged = true
+                if round == 2, let id = targetPart, (vm.parts[id]?.progress ?? 0) >= 1 {
                     vm.setRepairing(false)
-                    NSLog("[CFREPAIR] part fixed OK")
+                    NSLog("[CFREPAIR] \(roundLabel) OK")
+                    targetPart = nil
+                    progressSeen = false
+                    round = 3
+                    let next = roundLabel == plan[0].label ? 1 : 2
+                    if next < plan.count {
+                        startRound(next)
+                    } else {
+                        NSLog("[CFREPAIR] all rounds OK")
+                        t.invalidate()
+                    }
                 }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 75.0) {
-                if !fixedLogged { NSLog("[CFREPAIR] TIMEOUT FAIL") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { startRound(0) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 115.0) {
+                NSLog("[CFREPAIR] TIMEOUT FAIL round=\(round) part=\(targetPart ?? "-")")
             }
             return
         }
