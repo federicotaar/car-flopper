@@ -275,8 +275,8 @@ final class CarAssembly {
             holder.addChildNode(ring)
             holder.runAction(.repeatForever(.rotateBy(x: 0, y: .pi * 2, z: 0, duration: 3.2)))
             ring.runAction(.repeatForever(.sequence([
-                .fadeAlpha(to: 0.35, duration: 0.8),
-                .fadeAlpha(to: 1.0, duration: 0.8),
+                .scale(to: 1.18, duration: 0.8),
+                .scale(to: 1.0, duration: 0.8),
             ])))
             root.addChildNode(holder)
             markers[p.id] = holder
