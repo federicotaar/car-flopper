@@ -25,11 +25,11 @@ enum Mat {
     static let rust = Mat.flat(0.40, 0.22, 0.12)
 
     static func setup() {
-        glass.diffuse.contents = UIColor(white: 0.38, alpha: 0.42)
-        glass.specular.contents = UIColor(white: 0.9, alpha: 1)
+        glass.diffuse.contents = UIColor(white: 0.16, alpha: 0.55)
+        glass.specular.contents = UIColor(white: 1.0, alpha: 1)
         glass.isDoubleSided = true
-        glass.roughness.contents = 0.12
-        glass.metalness.contents = 0.05
+        glass.roughness.contents = 0.08
+        glass.metalness.contents = 0.0
     }
 }
 
@@ -110,6 +110,22 @@ enum TexGen {
 
 enum GarageBuilder {
     // Garage interior: 16 x 7 walls around a 16 x 12 floor, origin center.
+    // soft studio-style gradient used as the scene's lighting environment, so
+    // metallic paint and glass pick up believable reflections instead of
+    // rendering flat black (no env map = dead metal in SceneKit)
+    static func envImage() -> UIImage {
+        let s = CGSize(width: 128, height: 64)
+        let r = UIGraphicsImageRenderer(size: s)
+        return r.image { _ in
+            for y in 0..<Int(s.height) {
+                let t = CGFloat(y) / (s.height - 1)
+                let v: CGFloat = t < 0.5 ? 0.85 - t * 1.3 : 0.20 - (t - 0.5) * 0.30
+                UIColor(white: max(0.04, v), alpha: 1).setFill()
+                UIRectFill(CGRect(x: 0, y: CGFloat(y), width: s.width, height: 1))
+            }
+        }
+    }
+
     static func buildEnvironment(into root: SCNNode) {
         Mat.setup()
 

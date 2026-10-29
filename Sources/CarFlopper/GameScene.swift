@@ -49,6 +49,8 @@ final class GameSceneController: NSObject {
         self.localId = localId
         super.init()
         GarageBuilder.buildEnvironment(into: scene.rootNode)
+        scene.lightingEnvironment.contents = GarageBuilder.envImage()
+        scene.lightingEnvironment.intensity = 1.1
         syncLocalAvatar()
     }
 
