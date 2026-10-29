@@ -11,9 +11,9 @@ struct GameView: View {
         #if AUTODRIVE
         guard ProcessInfo.processInfo.arguments.contains("-CFAutoDrive") else { return }
         print("[CFAUTODRIVE] garage appeared")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) { vm.joystick = CGVector(dx: 0, dy: -1); print("[CFAUTODRIVE] walk forward") }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 8.5) { vm.joystick = CGVector(dx: 0.7, dy: -0.5); print("[CFAUTODRIVE] walk diagonal") }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 11.5) { vm.joystick = .zero; print("[CFAUTODRIVE] walk stop") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { vm.joystick = CGVector(dx: 0, dy: 1); print("[CFAUTODRIVE] walk toward car") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { vm.joystick = CGVector(dx: 0.6, dy: 0.6); print("[CFAUTODRIVE] walk diagonal") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 11.0) { vm.joystick = .zero; print("[CFAUTODRIVE] walk stop") }
         #endif
     }
 
@@ -207,12 +207,18 @@ struct SceneViewBridge: UIViewRepresentable {
             let px = controller.localPosition.x
             let pz = controller.localPosition.z
             // clamp inside the garage shell so walls never swallow the camera
-            let cx = max(-7.8, min(7.8, px - sinf(yaw) * dist))
-            let cz = max(-5.8, min(5.8, pz - cosf(yaw) * dist))
+            let rawCx = px - sinf(yaw) * dist
+            let rawCz = pz - cosf(yaw) * dist
+            let cx = max(-7.8, min(7.8, rawCx))
+            let cz = max(-5.8, min(5.8, rawCz))
             camNode?.position = SCNVector3(cx, height, cz)
-            let tx = px * 0.35
-            let tz = pz * 0.35
-            camNode?.look(at: SCNVector3(tx, 0.7, tz))
+            // when the wall clamp kicks in the camera sits almost above the player;
+            // aim straight at them so they never leave the frame
+            if abs(rawCx - cx) > 0.01 || abs(rawCz - cz) > 0.01 {
+                camNode?.look(at: SCNVector3(px, 1.0, pz))
+            } else {
+                camNode?.look(at: SCNVector3(px * 0.35, 0.7, pz * 0.35))
+            }
         }
     }
 }

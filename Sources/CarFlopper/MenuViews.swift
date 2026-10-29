@@ -161,7 +161,7 @@ struct LobbyView: View {
         #if AUTODRIVE
         guard ProcessInfo.processInfo.arguments.contains("-CFAutoDrive") else { return }
         print("[CFAUTODRIVE] lobby appeared, isHost=\(vm.isHost)")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
             if vm.isHost { print("[CFAUTODRIVE] host starting game"); onStart() }
         }
         #endif

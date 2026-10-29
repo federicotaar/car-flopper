@@ -24,6 +24,7 @@ final class GameSceneController: NSObject {
         self.localId = localId
         super.init()
         GarageBuilder.buildEnvironment(into: scene.rootNode)
+        syncLocalAvatar()
     }
 
     func setCar(index: Int, parts: [String: PartState]) {
