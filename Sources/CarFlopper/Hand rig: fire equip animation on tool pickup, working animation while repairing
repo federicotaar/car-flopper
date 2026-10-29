@@ -106,6 +106,7 @@ final class GameViewModel: ObservableObject {
         }
         if let st = pickStation {
                 heldTool = st.tool
+                sceneCtrl.equipHandTool(st.tool)
                 if let td = GameContent.tools[st.tool] {
                     toolToast = "\(td.label) equipped"
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -140,9 +141,11 @@ final class GameViewModel: ObservableObject {
                 return
             }
             isRepairing = true
+            sceneCtrl.setHandWorking(true, tool: p.tool)
             session.sendRepair(part: p.id, on: true)
         } else {
             isRepairing = false
+            sceneCtrl.setHandWorking(false, tool: nil)
             session.sendRepair(part: nil, on: false)
         }
     }
