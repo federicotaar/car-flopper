@@ -390,7 +390,15 @@ final class CarAssembly {
         for p in def.parts {
             guard let anchor = partNodes[p.id] else { continue }
             let holder = SCNNode()
-            holder.position = SCNVector3(anchor.position.x, anchor.position.y + (haloLift[p.id] ?? 0.40), anchor.position.z)
+            // lift above the part, then push outward from the car's center
+            // axis: panel-flush parts (wheels, door) keep their full ring
+            // instead of the fender slicing it into an arc, while depth
+            // testing stays on so markers never show through the car
+            let push: Float = 0.22
+            let alen = max(0.001, hypotf(anchor.position.x, anchor.position.z))
+            holder.position = SCNVector3(anchor.position.x + anchor.position.x / alen * push,
+                                         anchor.position.y + (haloLift[p.id] ?? 0.40),
+                                         anchor.position.z + anchor.position.z / alen * push)
             let ring = SCNNode(geometry: SCNTorus(ringRadius: 0.14, pipeRadius: 0.013))
             let m = SCNMaterial()
             m.emission.contents = GameContent.tools[p.tool]?.color ?? UIColor(red: 1, green: 0.15, blue: 0.1, alpha: 1)

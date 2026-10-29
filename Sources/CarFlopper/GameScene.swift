@@ -117,20 +117,25 @@ final class GameSceneController: NSObject {
 
     // MARK: repair helpers
 
+    // Which part the player is working on. Predictable rule: among broken
+    // parts in reach, the one the camera points at wins; distance breaks
+    // ties. No hidden held-tool preference - what you look at is what you fix.
     func nearestBrokenPart(parts: [String: PartState]) -> (PartDef, Float)? {
         guard let car else { return nil }
-        var best: (PartDef, Float)?
+        let fwdX = -sinf(cameraYaw), fwdZ = -cosf(cameraYaw)
+        var best: (PartDef, Float, Float)?
         for p in car.def.parts {
             let st = parts[p.id]
             guard (st?.progress ?? 0) < 1 else { continue }
-            let dx = localPosition.x - p.x
-            let dz = localPosition.z - p.z
+            let dx = p.x - localPosition.x
+            let dz = p.z - localPosition.z
             let d = sqrtf(dx * dx + dz * dz)
-            if d < GameContent.repairReach, best == nil || d < best!.1 {
-                best = (p, d)
-            }
+            guard d < GameContent.repairReach else { continue }
+            let facing = (dx * fwdX + dz * fwdZ) / max(d, 0.001) // 1 = dead ahead
+            let score = d - facing * 0.9 // aim weighs like ~0.9m of distance
+            if best == nil || score < best!.2 { best = (p, d, score) }
         }
-        return best
+        return best.map { ($0.0, $0.1) }
     }
 
     private func updateSparks(parts: [String: PartState]) {

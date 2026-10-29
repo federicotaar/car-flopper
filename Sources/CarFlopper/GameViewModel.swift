@@ -80,11 +80,18 @@ final class GameViewModel: ObservableObject {
             let moving = jx != 0 || jy != 0
             session.sendPosition(x: sceneCtrl.localPosition.x, z: sceneCtrl.localPosition.z, ry: sceneCtrl.localHeading, moving: moving)
         }
-        // tool stations: walk into a ring to equip
+        // tool stations: walk into a ring to equip. Benches sit close
+        // together, so equip the NEAREST station in reach - never an
+        // arbitrary neighbor picked by array order
+        var pickStation: ToolStation?
+        var pickD2 = GameContent.toolPickupReach * GameContent.toolPickupReach
         for st in GameContent.toolStations where st.tool != heldTool {
             let dx = sceneCtrl.localPosition.x - st.x
             let dz = sceneCtrl.localPosition.z - st.z
-            if dx * dx + dz * dz < GameContent.toolPickupReach * GameContent.toolPickupReach {
+            let d2 = dx * dx + dz * dz
+            if d2 < pickD2 { pickD2 = d2; pickStation = st }
+        }
+        if let st = pickStation {
                 heldTool = st.tool
                 if let td = GameContent.tools[st.tool] {
                     toolToast = "\(td.label) equipped"
@@ -95,7 +102,6 @@ final class GameViewModel: ObservableObject {
                     }
                     _ = t
                 }
-            }
         }
         // repairing must stop if we walk out of range or part got fixed
         if isRepairing && activePart == nil { setRepairing(false) }
