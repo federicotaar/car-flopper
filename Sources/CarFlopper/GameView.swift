@@ -197,7 +197,7 @@ struct SceneViewBridge: UIViewRepresentable {
             let cx = px - sinf(yaw) * dist
             let cz = pz - cosf(yaw) * dist
             camNode?.position = SCNVector3(cx, height, cz)
-            camNode?.eulerAngles = SCNVector3(-0.68, CGFloat(yaw), 0)
+            camNode?.eulerAngles = SCNVector3(-0.68, yaw, 0)
         }
     }
 }

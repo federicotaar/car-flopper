@@ -151,7 +151,7 @@ final class GameSession: NSObject, URLSessionWebSocketDelegate {
     }
 
     func sendRepair(part: String?, on: Bool) {
-        send(["t": "repair", "part": part as Any, "on": on])
+        send(["t": "repair", "part": part ?? NSNull(), "on": on])
     }
 
     func sendStart() { send(["t": "start"]) }

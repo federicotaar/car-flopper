@@ -90,7 +90,7 @@ enum GarageBuilder {
         root.addChildNode(door)
         for i in 0..<6 {
             let rib = SCNNode(geometry: SCNBox(width: 5.5, height: 0.06, length: 0.04, chamferRadius: 0))
-            rib.position = SCNVector3(0, Float(0.4 + i) * 0.5, 5.86)
+            rib.position = SCNVector3(0, 0.4 + Float(i) * 0.5, 5.86)
             (rib.geometry as? SCNBox)?.materials = [Mat.steel]
             root.addChildNode(rib)
         }
@@ -134,7 +134,7 @@ enum GarageBuilder {
         root.addChildNode(cab)
         for i in 0..<4 {
             let drawer = SCNNode(geometry: SCNBox(width: 0.86, height: 0.04, length: 0.03, chamferRadius: 0))
-            drawer.position = SCNVector3(4.6, Float(0.35 + i) * 0.28, -5.19)
+            drawer.position = SCNVector3(4.6, 0.35 + Float(i) * 0.28, -5.19)
             (drawer.geometry as? SCNBox)?.materials = [Mat.steelDark]
             root.addChildNode(drawer)
         }

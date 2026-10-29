@@ -72,7 +72,7 @@ final class GameSceneController: NSObject {
             let cur = av.root.position
             let t: Float = 0.35
             av.root.position = SCNVector3(cur.x + (target.x - cur.x) * t, 0, cur.z + (target.z - cur.z) * t)
-            av.root.eulerAngles.y = CGFloat(p.ry)
+            av.root.eulerAngles.y = p.ry
         }
     }
 
@@ -85,7 +85,7 @@ final class GameSceneController: NSObject {
         }
         let av = avatars[localId]!
         av.root.position = localPosition
-        av.root.eulerAngles.y = CGFloat(localHeading)
+        av.root.eulerAngles.y = localHeading
     }
 
     // MARK: repair helpers

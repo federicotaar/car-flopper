@@ -122,11 +122,11 @@ final class CarAssembly {
 
         // repair markers (floating diamonds above broken parts)
         for p in def.parts {
-            let marker = SCNNode(geometry: SCNOctahedron(radius: 0.14))
+            let marker = SCNNode(geometry: SCNPyramid(width: 0.24, height: 0.24, length: 0.24))
             let m = SCNMaterial()
             m.emission.contents = UIColor(red: 1, green: 0.15, blue: 0.1, alpha: 1)
             m.diffuse.contents = UIColor.black
-            (marker.geometry as? SCNOctahedron)?.materials = [m]
+            (marker.geometry as? SCNPyramid)?.materials = [m]
             marker.position = SCNVector3(p.x, p.y + 0.85, p.z)
             marker.runAction(.repeatForever(.sequence([
                 .moveBy(x: 0, y: 0.15, z: 0, duration: 0.6),
