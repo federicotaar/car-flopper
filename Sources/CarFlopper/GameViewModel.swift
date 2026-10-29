@@ -82,14 +82,27 @@ final class GameViewModel: ObservableObject {
         }
         // tool stations: walk into a ring to equip. Benches sit close
         // together, so equip the NEAREST station in reach - never an
-        // arbitrary neighbor picked by array order
+        // arbitrary neighbor picked by array order. While you still stand
+        // inside the ring of the tool you already hold, KEEP it: two
+        // overlapping rings (wrench/welder benches are 1.28m apart, reach
+        // is 1.3m) would otherwise swap the tool back and forth every tick
+        // and leave you holding whichever one the last frame picked.
+        let reach2 = GameContent.toolPickupReach * GameContent.toolPickupReach
+        var keepHeld = false
+        if let held = heldTool, let hs = GameContent.toolStations.first(where: { $0.tool == held }) {
+            let hx = sceneCtrl.localPosition.x - hs.x
+            let hz = sceneCtrl.localPosition.z - hs.z
+            keepHeld = hx * hx + hz * hz < reach2
+        }
         var pickStation: ToolStation?
-        var pickD2 = GameContent.toolPickupReach * GameContent.toolPickupReach
-        for st in GameContent.toolStations where st.tool != heldTool {
-            let dx = sceneCtrl.localPosition.x - st.x
-            let dz = sceneCtrl.localPosition.z - st.z
-            let d2 = dx * dx + dz * dz
-            if d2 < pickD2 { pickD2 = d2; pickStation = st }
+        var pickD2 = reach2
+        if !keepHeld {
+            for st in GameContent.toolStations where st.tool != heldTool {
+                let dx = sceneCtrl.localPosition.x - st.x
+                let dz = sceneCtrl.localPosition.z - st.z
+                let d2 = dx * dx + dz * dz
+                if d2 < pickD2 { pickD2 = d2; pickStation = st }
+            }
         }
         if let st = pickStation {
                 heldTool = st.tool
