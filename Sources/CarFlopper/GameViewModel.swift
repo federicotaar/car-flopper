@@ -15,6 +15,7 @@ final class GameViewModel: ObservableObject {
     @Published var parts: [String: PartState] = [:]
     @Published var carIndex: Int = 0
     @Published var isHost = false
+    @Published var hostId = ""
     @Published var connectionError: String?
 
     @Published var joystick: CGVector = .zero
@@ -114,6 +115,7 @@ extension GameViewModel: GameSessionDelegate {
             self.players = snapshot.players
             self.parts = snapshot.parts
             self.carIndex = snapshot.carIndex
+            self.hostId = snapshot.hostId
             self.isHost = snapshot.hostId == s.myId
             if let myId = s.myId, self.sceneCtrl.localId != myId {
                 self.sceneCtrl.localId = myId
