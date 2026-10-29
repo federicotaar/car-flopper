@@ -1,0 +1,9 @@
+version: 1
+bundleID: federicotaranu.carflopper
+product: CarFlopper
+infoPath: CarFlopper-Info.plist
+entitlementsPath: CarFlopper.entitlements
+iconPath: Resources/icon1024.png
+resources:
+  - Resources/AppIcon60x60@2x.png
+  - Resources/AppIcon60x60@3x.png

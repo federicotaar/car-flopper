@@ -1,0 +1,12 @@
+name = "car-flopper-api"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+[durable_objects]
+bindings = [
+  { name = "GARAGE_ROOM", class_name = "GarageRoom" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["GarageRoom"]
