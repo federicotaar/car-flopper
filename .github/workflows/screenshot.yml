@@ -149,3 +149,5 @@ jobs:
           path: |
             shots/*.png
             shots/*.mp4
+
+# re-registration touch after rename repair (no functional change)
