@@ -51,10 +51,15 @@ jobs:
           xcrun simctl boot cf-shot
           xcrun simctl bootstatus cf-shot -b
 
+      - name: Enable autodrive hooks for the sim build only
+        run: |
+          sed -i '' 's/#if AUTODRIVE/#if true/' Sources/CarFlopper/MenuViews.swift Sources/CarFlopper/GameView.swift
+          grep -c '#if true' Sources/CarFlopper/MenuViews.swift Sources/CarFlopper/GameView.swift
+
       - name: Build for simulator
         run: |
           set -e
-          xtool dev build --triple arm64-apple-ios-simulator -c release -Xswiftc -DAUTODRIVE
+          xtool dev build --triple arm64-apple-ios-simulator -c release
           echo "---- build output ----"
           find . -name "*.app" -maxdepth 4
 
@@ -66,20 +71,20 @@ jobs:
           xcrun simctl install cf-shot "$APP"
           xcrun simctl spawn cf-shot defaults write federicotaranu.carflopper carflopper.nick -string SIMHOST || true
           xcrun simctl launch cf-shot federicotaranu.carflopper -CFAutoDrive || true
-          sleep 10
           mkdir -p shots
+          sleep 4
           xcrun simctl io cf-shot screenshot shots/01-menu.png
 
       - name: Capture auto-drive lobby, garage and walk
         run: |
           set -e
-          sleep 12
+          sleep 4.5
           xcrun simctl io cf-shot screenshot shots/02-lobby.png
-          sleep 10
+          sleep 6.5
           xcrun simctl io cf-shot screenshot shots/03-garage.png
-          sleep 6
+          sleep 5
           xcrun simctl io cf-shot screenshot shots/04-walk.png
-          sleep 6
+          sleep 10
           xcrun simctl io cf-shot screenshot shots/05-walk2.png
 
       - name: App log tail
