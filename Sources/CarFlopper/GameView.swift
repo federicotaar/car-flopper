@@ -410,6 +410,14 @@ struct SceneViewBridge: UIViewRepresentable {
         cam.camera?.contrast = 1.06
         cam.camera?.vignettingPower = 1.1
         cam.camera?.vignettingIntensity = 0.4
+        // the pointOfView node must be IN the scene graph: SceneKit only
+        // draws a node's children when the node is part of the tree, and the
+        // first-person hand rig hangs off this camera. A detached pointOfView
+        // still renders the view itself, which hid this for two captures.
+        controller.scene.rootNode.addChildNode(cam)
+#if AUTODRIVE
+        NSLog("[CFAUTODRIVE][CFHAND] cam added to scene graph, hand rig attach requested")
+#endif
         v.pointOfView = cam
         context.coordinator.camNode = cam
         controller.attachHandIfNeeded(to: cam)
