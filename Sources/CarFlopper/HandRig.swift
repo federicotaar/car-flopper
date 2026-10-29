@@ -41,6 +41,7 @@ final class HandRig {
     private var swayX: Float = 0
     private var swayY: Float = 0
     private var workTime: Float = 0
+    //ADLOG private var logT: Float = 0
 
     // camera-space rest pose: lower right, forearm entering off-screen
     private let restPos = SCNVector3(0.150, -0.115, -0.360)
@@ -214,7 +215,10 @@ final class HandRig {
     // MARK: - per-frame update (render queue only)
 
     func update(dt: Float, move: Float, yawVel: Float, pitchVel: Float) {
-        guard dt > 0, dt < 0.2 else { return }
+        guard dt > 0 else { return }
+        // clamp hitches (sim capture frames run 300-500ms): rejecting a slow
+        // frame freezes the rig dead, a clamped step keeps it alive
+        let dt = min(dt, 0.2)
 
         reqLock.lock()
         let eq = pendingEquip; pendingEquip = nil
@@ -312,6 +316,12 @@ final class HandRig {
             pose.eulerAngles.x + (targetRot.x - pose.eulerAngles.x) * f,
             pose.eulerAngles.y + (targetRot.y - pose.eulerAngles.y) * f,
             pose.eulerAngles.z + (targetRot.z - pose.eulerAngles.z) * f)
+        //ADLOG logT += dt
+        //ADLOG if logT >= 1 {
+        //ADLOG     logT = 0
+        //ADLOG     let m = mode == .idle ? 0 : (mode == .equip ? 1 : 2)
+        //ADLOG     NSLog("[CFAUTODRIVE][CFHAND] mode=%ld tool=%@ pose=(%.3f,%.3f,%.3f) attached=%ld", m, currentTool ?? "-", Double(pose.position.x), Double(pose.position.y), Double(pose.position.z), root.parent == nil ? 0 : 1)
+        //ADLOG }
     }
 
     // the equip request carries the tool id; stashed so the timeline can
