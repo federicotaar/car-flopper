@@ -66,7 +66,9 @@ jobs:
       - name: Enable autodrive hooks for the sim build only
         run: |
           sed -i '' 's/#if AUTODRIVE/#if true/' Sources/CarFlopper/MenuViews.swift Sources/CarFlopper/GameView.swift
+          sed -i '' 's|//ADLOG ||' Sources/CarFlopper/HandRig.swift Sources/CarFlopper/GameScene.swift
           grep -c '#if true' Sources/CarFlopper/MenuViews.swift Sources/CarFlopper/GameView.swift
+          grep -c CFHAND Sources/CarFlopper/HandRig.swift Sources/CarFlopper/GameScene.swift
 
       - name: Build for simulator
         run: |
