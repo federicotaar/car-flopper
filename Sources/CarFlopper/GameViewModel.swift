@@ -22,6 +22,9 @@ final class GameViewModel: ObservableObject {
     @Published var isRepairing = false
     @Published var heldTool: String? = nil   // nil = bare hands
     @Published var toolToast: String? = nil  // "Wrench equipped" flash
+    private var pendingPickupTool: String? = nil   // station ring you stand in, not yet grabbed
+    private var pendingPickupSince: TimeInterval = 0
+    private var pickupPromptTool: String? = nil    // which "look to grab" prompt is up
     @Published var wrongToolFlash = false    // tapped fix without the right tool
 
     private var tickObserver: NSObjectProtocol?
@@ -105,8 +108,25 @@ final class GameViewModel: ObservableObject {
             }
         }
         if let st = pickStation {
+            // facing-gated pickup: the grab fires while you look at the
+            // station so the reach to the floating tool is on camera. Stand
+            // in the ring without looking and a 5s grace still hands you the
+            // tool - tool access never dead-ends behind the camera.
+            if pendingPickupTool != st.tool { pendingPickupTool = st.tool; pendingPickupSince = now }
+            let fdx = st.x - sceneCtrl.localPosition.x
+            let fdz = st.z - sceneCtrl.localPosition.z
+            let fl = max(0.001, hypotf(fdx, fdz))
+            let facing = -sinf(sceneCtrl.cameraYaw) * (fdx / fl) - cosf(sceneCtrl.cameraYaw) * (fdz / fl)
+            if facing > 0.55 || now - pendingPickupSince > 5 {
+                pendingPickupTool = nil
+                pickupPromptTool = nil
                 heldTool = st.tool
-                sceneCtrl.equipHandTool(st.tool)
+                sceneCtrl.equipHandTool(st.tool, fromWorld: SCNVector3(st.x, 1.05, st.z))
+                // the station float vanishes as the tool lands in the hand
+                let heldNow = st.tool
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                    self?.sceneCtrl.setHeldStationDisplay(heldNow)
+                }
                 if let td = GameContent.tools[st.tool] {
                     toolToast = "\(td.label) equipped"
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -116,6 +136,16 @@ final class GameViewModel: ObservableObject {
                     }
                     _ = t
                 }
+            } else if let td = GameContent.tools[st.tool], pickupPromptTool != st.tool {
+                pickupPromptTool = st.tool
+                toolToast = "Look at the \(td.label) to grab it"
+            }
+        } else {
+            pendingPickupTool = nil
+            if let pt = pickupPromptTool {
+                pickupPromptTool = nil
+                if let td = GameContent.tools[pt], toolToast == "Look at the \(td.label) to grab it" { toolToast = nil }
+            }
         }
         // repairing must stop if we walk out of range or part got fixed
         if isRepairing && activePart == nil { setRepairing(false) }
