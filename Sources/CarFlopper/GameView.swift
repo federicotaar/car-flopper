@@ -25,7 +25,7 @@ struct GameView: View {
                 // keep orbit radius in [2.9, 3.4] so we never grind the car or the walls
                 let r = hypotf(p.x, p.z)
                 let inward: Float = r > 3.4 ? 0.35 : (r < 2.9 ? -0.35 : 0.0)
-                vm.joystick = CGVector(dx: 0.7, dy: -inward)
+                vm.joystick = CGVector(dx: 0.7, dy: Double(-inward))
             }
         }
         #endif
