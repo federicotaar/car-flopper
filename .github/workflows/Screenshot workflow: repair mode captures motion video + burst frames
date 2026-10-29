@@ -8,6 +8,12 @@ on:
         required: false
         type: boolean
         default: false
+      mode:
+        description: 'showcase (orbit captures) or repair (repair-motion video + burst frames)'
+        required: true
+        type: choice
+        options: [showcase, repair]
+        default: showcase
 
 permissions:
   contents: write
@@ -78,12 +84,14 @@ jobs:
           xcrun simctl spawn cf-shot defaults write federicotaranu.carflopper carflopper.nick -string SIMHOST || true
           ARGS="-CFAutoDrive"
           if [ "${{ inputs.autodrive_debug }}" = "true" ]; then ARGS="$ARGS -CFAutoDriveDebug"; fi
+          if [ "${{ inputs.mode }}" = "repair" ]; then ARGS="$ARGS -CFAutoDriveRepair"; fi
           xcrun simctl launch cf-shot federicotaranu.carflopper $ARGS || true
           mkdir -p shots
           sleep 4
           xcrun simctl io cf-shot screenshot shots/01-menu.png
 
       - name: Capture auto-drive lobby, garage, walk and parks
+        if: inputs.mode != 'repair'
         run: |
           set -e
           nohup xcrun simctl spawn cf-shot log stream --level debug --predicate 'process == "CarFlopper"' --style compact > /tmp/cflog.txt 2>&1 &
@@ -108,7 +116,22 @@ jobs:
           sleep 20
           xcrun simctl io cf-shot screenshot shots/11-final.png
 
-      - name: App log tail
+      - name: Capture repair motion (video + burst frames)
+        if: inputs.mode == 'repair'
+        run: |
+          set -e
+          nohup xcrun simctl spawn cf-shot log stream --level debug --predicate 'process == "CarFlopper"' --style compact > /tmp/cflog.txt 2>&1 &
+          # video covers: garage appear, equip reach at the diagnostics cart,
+          # 12s engine hold, wrench equip reach, 7s wheel hold, plus margin
+          xcrun simctl io cf-shot recordVideo shots/repair-motion.mp4 &
+          VIDPID=$!
+          for i in $(seq 1 15); do
+            sleep 5
+            xcrun simctl io cf-shot screenshot "shots/repair-$(printf %02d $i).png" || true
+          done
+          kill -INT $VIDPID || true
+          sleep 3
+          ls -la shots/
         if: always()
         run: |
           echo '--- log stream CFAUTODRIVE ---'
@@ -123,4 +146,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sim-screenshots
-          path: shots/*.png
+          path: |
+            shots/*.png
+            shots/*.mp4
