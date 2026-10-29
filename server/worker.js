@@ -7,6 +7,9 @@ const MAX_PLAYERS = 4;
 const TICK_MS = 250;
 const BROADCAST_EVERY = 2; // every 2 ticks = 500ms
 const COOP_BONUS = 0.7;
+const MAX_MSG_BYTES = 4096; // fail closed on junk
+const IDLE_KICK_MS = 10 * 60 * 1000; // ghost-socket cleanup: no message for 10 min -> kick
+const MIN_POS_GAP_MS = 40; // cap incoming pos at 25 Hz (client sends ~12 Hz)
 
 // Part ids + solo repair seconds. Must match the iOS client's GameContent.
 const PARTS = [
@@ -116,7 +119,7 @@ export class GarageRoom {
 
       const id = crypto.randomUUID().slice(0, 8);
       const color = this.colorPool.length ? this.colorPool.shift() : this.players.size % 4;
-      const player = { id, name, color, x: 0, z: 3.5, ry: 3.14, moving: false, repairing: null };
+      const player = { id, name, color, x: 0, z: 3.5, ry: 3.14, moving: false, repairing: null, lastSeen: Date.now(), lastPosAt: 0 };
       this.players.set(server, player);
       if (!this.hostId) this.hostId = id;
 
@@ -125,8 +128,17 @@ export class GarageRoom {
       this.ensureTimer();
 
       server.addEventListener("message", (ev) => {
+        if (typeof ev.data !== "string" || ev.data.length > MAX_MSG_BYTES) {
+          try { server.close(1009, "message too big"); } catch {}
+          return;
+        }
         let msg;
         try { msg = JSON.parse(ev.data); } catch { return; }
+        player.lastSeen = Date.now();
+        if (msg.t === "pos") {
+          if (player.lastSeen - player.lastPosAt < MIN_POS_GAP_MS) return; // drop excess
+          player.lastPosAt = player.lastSeen;
+        }
         this.onMessage(server, player, msg);
       });
       server.addEventListener("close", () => this.onClose(server, player));
@@ -193,6 +205,14 @@ export class GarageRoom {
   }
 
   tick() {
+    // ghost-socket cleanup so a dead client cannot pin a room forever
+    const now = Date.now();
+    for (const [ws, pl] of [...this.players]) {
+      if (now - pl.lastSeen > IDLE_KICK_MS) {
+        try { ws.close(1001, "idle"); } catch {}
+        this.onClose(ws, pl);
+      }
+    }
     if (this.phase === "play") {
       // reset fixer counts, then count from players
       for (const p of Object.values(this.parts)) p.fixers = 0;

@@ -1,6 +1,10 @@
 name = "car-flopper-api"
 main = "worker.js"
 compatibility_date = "2026-01-01"
+workers_dev = false
+routes = [
+  { pattern = "car-flopper.federicotaranu.site", custom_domain = true }
+]
 
 [durable_objects]
 bindings = [
@@ -9,4 +13,4 @@ bindings = [
 
 [[migrations]]
 tag = "v1"
-new_classes = ["GarageRoom"]
+new_sqlite_classes = ["GarageRoom"]  # free plan requires SQLite-backed DOs

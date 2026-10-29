@@ -41,7 +41,7 @@ enum NetError: Error, LocalizedError {
 
 final class RoomClient {
     // Central place for the server address; swapped when the Worker is deployed.
-    static let httpBase = "https://garage-squad-api.federicotaranu.site"
+    static let httpBase = "https://car-flopper.federicotaranu.site"
     static var wsBase: String { httpBase.replacingOccurrences(of: "https://", with: "wss://") }
 
     static func createRoom() async throws -> String {
