@@ -163,7 +163,7 @@ struct LobbyView: View {
                     .foregroundStyle(.white.opacity(0.6))
 
                 VStack(alignment: .leading, spacing: 10) {
-                    ForEach(vm.players) { p in
+                    ForEach(vm.players, id: \.id) { p in
                         HStack(spacing: 10) {
                             Circle().fill(Color(GameContent.playerColor(p.color))).frame(width: 14, height: 14)
                             Text(p.name).foregroundStyle(.white)
