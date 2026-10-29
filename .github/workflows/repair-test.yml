@@ -1,0 +1,96 @@
+name: Repair loop regression (sim)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repair-test
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install xtool
+        run: |
+          set -e
+          for i in 1 2 3; do
+            curl -fSL --retry 3 -o /tmp/xtool.app.zip https://github.com/xtool-org/xtool/releases/download/1.17.0/xtool.app.zip && break
+            sleep 5
+          done
+          ditto -x -k /tmp/xtool.app.zip /tmp/xtool
+          echo "/tmp/xtool/xtool.app/Contents/Resources/bin" >> "$GITHUB_PATH"
+
+      - name: Generate app icon
+        run: |
+          set -e
+          mkdir -p Resources
+          base64 -D -i assets/icon.b64 -o Resources/icon1024.png
+          sips -z 120 120 Resources/icon1024.png --out "Resources/AppIcon60x60@2x.png"
+          sips -z 180 180 Resources/icon1024.png --out "Resources/AppIcon60x60@3x.png"
+
+      - name: Boot an iPhone simulator
+        run: |
+          set -e
+          RUNTIME=$(xcrun simctl list runtimes -j | jq -r '[.runtimes[] | select(.platform=="iOS" and .isAvailable)] | last | .identifier')
+          DEV=$(xcrun simctl list devicetypes -j | jq -r '[.devicetypes[] | select(.name | test("iPhone 1[5-9]|iPhone [2-9]"))] | first | .identifier')
+          xcrun simctl create cf-repair "$DEV" "$RUNTIME"
+          xcrun simctl boot cf-repair
+          xcrun simctl bootstatus cf-repair -b
+
+      - name: Enable autodrive hooks for the sim build only
+        run: |
+          sed -i '' 's/#if AUTODRIVE/#if true/' Sources/CarFlopper/MenuViews.swift Sources/CarFlopper/GameView.swift
+          grep -c '#if true' Sources/CarFlopper/MenuViews.swift Sources/CarFlopper/GameView.swift
+
+      - name: Build for simulator
+        run: |
+          set -e
+          xtool dev build --triple arm64-apple-ios-simulator -c release
+          find . -name "*.app" -maxdepth 4
+
+      - name: Install and launch the repair-loop test
+        run: |
+          set -e
+          APP=$(find . -name "*.app" -maxdepth 4 | head -n1)
+          xcrun simctl install cf-repair "$APP"
+          xcrun simctl spawn cf-repair defaults write federicotaranu.carflopper carflopper.nick -string SIMFIX || true
+          xcrun simctl launch cf-repair federicotaranu.carflopper -CFAutoDrive -CFAutoDriveRepair || true
+          sleep 100
+
+      - name: Verify the repair loop completed without a hang
+        run: |
+          set -e
+          xcrun simctl spawn cf-repair log show --last 4m --predicate 'processImagePath CONTAINS "CarFlopper"' --style compact > repair.log || true
+          echo "---- CFREPAIR markers ----"
+          grep 'CFREPAIR' repair.log || true
+          echo "---- CFAUTODRIVE markers ----"
+          grep 'CFAUTODRIVE' repair.log | tail -8 || true
+          # freeze evidence: heartbeats must continue past the hold-fix moment
+          HB=$(grep -c 'CFREPAIR. heartbeat' repair.log || true)
+          echo "heartbeats: $HB"
+          grep -q 'diagnostics round OK' repair.log
+          grep -q 'repair round OK' repair.log
+          ! grep -q 'TIMEOUT FAIL' repair.log
+          ! grep -q 'CFREPAIR. FAIL' repair.log
+          LAST_HB=$(grep 'CFREPAIR. heartbeat' repair.log | tail -1 | grep -o '[0-9]*$')
+          echo "last heartbeat seen: $LAST_HB"
+          [ "${LAST_HB:-0}" -ge 80 ]
+
+      - name: Upload the test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repair-test-log
+          path: repair.log
