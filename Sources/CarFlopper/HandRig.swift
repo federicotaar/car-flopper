@@ -43,7 +43,7 @@ final class HandRig {
     private var workTime: Float = 0
 
     // camera-space rest pose: lower right, forearm entering off-screen
-    private let restPos = SCNVector3(0.170, -0.175, -0.400)
+    private let restPos = SCNVector3(0.150, -0.115, -0.360)
     private let restRot = SCNVector3(-0.28, -0.38, 0.10) // euler
 
     init() {
@@ -114,6 +114,16 @@ final class HandRig {
         pose.position = restPos
         pose.eulerAngles = restRot
 
+        // matte response for the whole hand: under the game's HDR + bloom the
+        // PBR skin read as a blown-white blob; lambert stays lit but readable
+        root.enumerateHierarchy { node, _ in
+            guard let mats = node.geometry?.materials else { return }
+            for m in mats {
+                if let sm = screenMat, m === sm { continue }
+                m.lightingModel = .lambert
+            }
+        }
+
         for t in ["wrench", "screwdriver", "welder", "diagnostics"] {
             let n = HandRig.buildTool(t, screenMat: &screenMat)
             n.isHidden = true
@@ -122,21 +132,27 @@ final class HandRig {
         }
     }
 
+    // hand-local tool materials: PBR + env + bloom blew the shared chrome out
+    // to white at camera distance; matte copies keep tools readable (and the
+    // garage's shared chrome untouched)
+    private static let toolChrome = Mat.flat(0.72, 0.73, 0.77, rough: 0.45, metal: 0.0)
+    private static let toolSteelDark = Mat.flat(0.20, 0.21, 0.24, rough: 0.55, metal: 0.0)
+
     private static func buildTool(_ id: String, screenMat: inout SCNMaterial?) -> SCNNode {
         let n = SCNNode()
         switch id {
         case "wrench":
             let shaft = SCNNode(geometry: SCNCylinder(radius: 0.0065, height: 0.150))
-            shaft.geometry?.firstMaterial = Mat.chrome
+            shaft.geometry?.firstMaterial = HandRig.toolChrome
             shaft.eulerAngles.x = .pi / 2
             shaft.position = SCNVector3(0, 0.01, -0.045)
             n.addChildNode(shaft)
             let head = SCNNode(geometry: SCNBox(width: 0.030, height: 0.011, length: 0.046, chamferRadius: 0.005))
-            head.geometry?.firstMaterial = Mat.chrome
+            head.geometry?.firstMaterial = HandRig.toolChrome
             head.position = SCNVector3(0, 0.01, -0.125)
             n.addChildNode(head)
             let jaw = SCNNode(geometry: SCNTorus(ringRadius: 0.016, pipeRadius: 0.006))
-            jaw.geometry?.firstMaterial = Mat.chrome
+            jaw.geometry?.firstMaterial = HandRig.toolChrome
             jaw.position = SCNVector3(0, 0.01, -0.146)
             n.addChildNode(jaw)
         case "screwdriver":
@@ -146,12 +162,12 @@ final class HandRig {
             grip.position = SCNVector3(0, 0.012, 0.005)
             n.addChildNode(grip)
             let shaft = SCNNode(geometry: SCNCylinder(radius: 0.0038, height: 0.095))
-            shaft.geometry?.firstMaterial = Mat.chrome
+            shaft.geometry?.firstMaterial = HandRig.toolChrome
             shaft.eulerAngles.x = .pi / 2
             shaft.position = SCNVector3(0, 0.012, -0.075)
             n.addChildNode(shaft)
             let tip = SCNNode(geometry: SCNCone(topRadius: 0.001, bottomRadius: 0.0042, height: 0.014))
-            tip.geometry?.firstMaterial = Mat.steelDark
+            tip.geometry?.firstMaterial = HandRig.toolSteelDark
             tip.eulerAngles.x = -.pi / 2
             tip.position = SCNVector3(0, 0.012, -0.128)
             n.addChildNode(tip)
@@ -249,7 +265,7 @@ final class HandRig {
             let T: Float = 0.85
             let p = min(1, equipT / T)
             // out-down toward the station, then back with the tool
-            let out = SCNVector3(0.30, -0.31, -0.30)
+            let out = SCNVector3(0.22, -0.16, -0.33)
             let k: Float = p < 0.4 ? (p / 0.4) : (1 - (p - 0.4) / 0.6)
             let e = k * k * (3 - 2 * k) // smoothstep
             target = SCNVector3(restPos.x + (out.x - restPos.x) * e,
