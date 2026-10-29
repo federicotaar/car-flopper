@@ -112,11 +112,11 @@ jobs:
           sleep 16
           xcrun simctl io cf-shot screenshot shots/08-rear.png
           sleep 17
-          xcrun simctl io cf-shot screenshot shots/09-rear2.png
+          xcrun simctl io cf-shot screenshot shots/09-bay.png
           sleep 20
-          xcrun simctl io cf-shot screenshot shots/10-rear3.png
+          xcrun simctl io cf-shot screenshot shots/10-wheelface.png
           sleep 20
-          xcrun simctl io cf-shot screenshot shots/11-final.png
+          xcrun simctl io cf-shot screenshot shots/11-side.png
 
       - name: Capture repair motion (video + burst frames)
         if: inputs.mode == 'repair'
