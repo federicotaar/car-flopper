@@ -235,8 +235,8 @@ final class HandRig {
         swayY += (sy - swayY) * sm
 
         sway.position = SCNVector3(
-            cos(phase * 0.5) * 0.007 * bobAmp + swayX,
-            sin(phase) * 0.010 * bobAmp + sin(phase * 0.31) * 0.0025 + swayY,
+            CGFloat(cos(phase * 0.5)) * 0.007 * bobAmp + swayX,
+            CGFloat(sin(phase)) * 0.010 * bobAmp + CGFloat(sin(phase * 0.31)) * 0.0025 + swayY,
             0)
 
         // mode behaviour
@@ -253,10 +253,13 @@ final class HandRig {
             let out = SCNVector3(0.30, -0.31, -0.30)
             let k: CGFloat = p < 0.4 ? (p / 0.4) : (1 - (p - 0.4) / 0.6)
             let e = k * k * (3 - 2 * k) // smoothstep
-            target = SCNVector3(restPos.x + (out.x - restPos.x) * e,
-                                restPos.y + (out.y - restPos.y) * e,
-                                restPos.z + (out.z - restPos.z) * e)
-            targetRot = SCNVector3(restRot.x - 0.5 * e, restRot.y, restRot.z + 0.25 * e)
+            let tx: CGFloat = restPos.x + (out.x - restPos.x) * e
+            let ty: CGFloat = restPos.y + (out.y - restPos.y) * e
+            let tz: CGFloat = restPos.z + (out.z - restPos.z) * e
+            target = SCNVector3(tx, ty, tz)
+            let rx: CGFloat = restRot.x - 0.5 * e
+            let rz: CGFloat = restRot.z + 0.25 * e
+            targetRot = SCNVector3(rx, restRot.y, rz)
             if p >= 0.45, let tool = _equipTool { showTool(tool) }
             if p >= 1 { mode = .idle }
         case .working:
@@ -265,21 +268,21 @@ final class HandRig {
             case "wrench":
                 target = SCNVector3(0.10, -0.10, -0.34)
                 targetRot = SCNVector3(-0.15, -0.25, 0.05)
-                wrist.eulerAngles = SCNVector3(sin(workTime * 6.5) * 0.42, 0, sin(workTime * 6.5) * 0.10)
+                wrist.eulerAngles = SCNVector3(CGFloat(sin(workTime * 6.5)) * 0.42, 0, CGFloat(sin(workTime * 6.5)) * 0.10)
             case "screwdriver":
                 target = SCNVector3(0.07, -0.08, -0.33)
                 targetRot = SCNVector3(-0.10, -0.20, 0.0)
-                wrist.eulerAngles = SCNVector3(sin(workTime * 11) * 0.06, sin(workTime * 11) * 0.30, 0)
+                wrist.eulerAngles = SCNVector3(CGFloat(sin(workTime * 11)) * 0.06, CGFloat(sin(workTime * 11)) * 0.30, 0)
             case "welder":
                 target = SCNVector3(0.05, -0.12, -0.44)
                 targetRot = SCNVector3(-0.05, -0.15, 0.0)
-                wrist.eulerAngles = SCNVector3(sin(workTime * 23) * 0.022, sin(workTime * 19) * 0.018, 0)
+                wrist.eulerAngles = SCNVector3(CGFloat(sin(workTime * 23)) * 0.022, CGFloat(sin(workTime * 19)) * 0.018, 0)
                 updateArc(on: true, t: workTime)
             case "diagnostics":
                 target = SCNVector3(0.0, -0.07, -0.33)
                 targetRot = SCNVector3(0.10, -0.10, 0.0)
-                wrist.eulerAngles = SCNVector3(sin(workTime * 1.8) * 0.03, 0, 0)
-                screenMat?.emission.intensity = 0.7 + 0.4 * CGFloat(abs(sin(workTime * 3)))
+                wrist.eulerAngles = SCNVector3(CGFloat(sin(workTime * 1.8)) * 0.03, 0, 0)
+                screenMat?.emission.intensity = 0.7 + 0.4 * CGFloat(abs(CGFloat(sin(workTime * 3))))
             default:
                 break
             }
@@ -289,14 +292,14 @@ final class HandRig {
 
         // smooth toward target pose
         let f = min(1, dt * 9)
-        pose.position = SCNVector3(
-            pose.position.x + (target.x - pose.position.x) * f,
-            pose.position.y + (target.y - pose.position.y) * f,
-            pose.position.z + (target.z - pose.position.z) * f)
-        pose.eulerAngles = SCNVector3(
-            pose.eulerAngles.x + (targetRot.x - pose.eulerAngles.x) * f,
-            pose.eulerAngles.y + (targetRot.y - pose.eulerAngles.y) * f,
-            pose.eulerAngles.z + (targetRot.z - pose.eulerAngles.z) * f)
+        let px: CGFloat = pose.position.x + (target.x - pose.position.x) * f
+        let py: CGFloat = pose.position.y + (target.y - pose.position.y) * f
+        let pz: CGFloat = pose.position.z + (target.z - pose.position.z) * f
+        pose.position = SCNVector3(px, py, pz)
+        let ex: CGFloat = pose.eulerAngles.x + (targetRot.x - pose.eulerAngles.x) * f
+        let ey: CGFloat = pose.eulerAngles.y + (targetRot.y - pose.eulerAngles.y) * f
+        let ez: CGFloat = pose.eulerAngles.z + (targetRot.z - pose.eulerAngles.z) * f
+        pose.eulerAngles = SCNVector3(ex, ey, ez)
     }
 
     // the equip request carries the tool id; stashed so the timeline can
@@ -325,7 +328,7 @@ final class HandRig {
                 arcNode = an
                 arcLight = l
             }
-            arcLight?.intensity = CGFloat(500 + 450 * abs(sin(t * 31)) + 150 * abs(sin(t * 47)))
+            arcLight?.intensity = CGFloat(500 + 450 * abs(CGFloat(sin(t * 31))) + 150 * abs(CGFloat(sin(t * 47))))
         } else {
             arcLight?.intensity = 0
         }
