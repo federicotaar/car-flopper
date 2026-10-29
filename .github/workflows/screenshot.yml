@@ -2,6 +2,12 @@ name: Simulator screenshots
 
 on:
   workflow_dispatch:
+    inputs:
+      autodrive_debug:
+        description: 'Autodrive on-screen debug overlay (kept out of preview captures)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -70,7 +76,9 @@ jobs:
           echo "App bundle: $APP"
           xcrun simctl install cf-shot "$APP"
           xcrun simctl spawn cf-shot defaults write federicotaranu.carflopper carflopper.nick -string SIMHOST || true
-          xcrun simctl launch cf-shot federicotaranu.carflopper -CFAutoDrive || true
+          ARGS="-CFAutoDrive"
+          if [ "${{ inputs.autodrive_debug }}" = "true" ]; then ARGS="$ARGS -CFAutoDriveDebug"; fi
+          xcrun simctl launch cf-shot federicotaranu.carflopper $ARGS || true
           mkdir -p shots
           sleep 4
           xcrun simctl io cf-shot screenshot shots/01-menu.png
@@ -78,6 +86,7 @@ jobs:
       - name: Capture auto-drive lobby, garage, walk and parks
         run: |
           set -e
+          nohup xcrun simctl spawn cf-shot log stream --level debug --predicate 'process == "CarFlopper"' --style compact > /tmp/cflog.txt 2>&1 &
           sleep 9
           xcrun simctl io cf-shot screenshot shots/02-lobby.png
           sleep 21
@@ -102,7 +111,12 @@ jobs:
       - name: App log tail
         if: always()
         run: |
-          xcrun simctl spawn cf-shot log show --last 3m --predicate 'processImagePath CONTAINS "CarFlopper"' --style compact | tail -80 || true
+          echo '--- log stream CFAUTODRIVE ---'
+          grep CFAUTODRIVE /tmp/cflog.txt | tail -80 || true
+          echo '--- log stream all ---'
+          tail -40 /tmp/cflog.txt || true
+          echo '--- log show fallback ---'
+          xcrun simctl spawn cf-shot log show --last 4m --predicate 'process == "CarFlopper"' --style compact | tail -40 || true
 
       - name: Upload screenshots
         if: always()
