@@ -56,7 +56,13 @@ final class GameSceneController: NSObject {
         handCam = cam
         //ADLOG NSLog("[CFAUTODRIVE][CFHAND] rig parented to cam; cam in scene=%ld", cam.parent == nil ? 0 : 1)
     }
-    func equipHandTool(_ tool: String) { handRig?.requestEquip(tool) }
+    func equipHandTool(_ tool: String, fromWorld: SCNVector3? = nil) { handRig?.requestEquip(tool, fromWorld: fromWorld) }
+    // the station stops floating a copy of the tool you are holding
+    func setHeldStationDisplay(_ held: String?) {
+        for st in GameContent.toolStations {
+            scene.rootNode.childNode(withName: "stationTool-\(st.tool)", recursively: true)?.isHidden = (st.tool == held)
+        }
+    }
     func setHandWorking(_ on: Bool, tool: String?) { handRig?.setWorking(on, tool: tool) }
     func updateHand(dt: Float, move: Float, yawVel: Float, pitchVel: Float) {
         handRig?.update(dt: dt, move: move, yawVel: yawVel, pitchVel: pitchVel)
