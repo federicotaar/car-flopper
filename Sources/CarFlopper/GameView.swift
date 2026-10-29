@@ -120,6 +120,8 @@ struct GameView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
             NSLog("[CFAUTODRIVE] orbit start")
             var phase = 0
+            var leg = 0
+            var lastPhase = -1
             var lastP = vm.sceneCtrl.localPosition
             var stuckTicks = 0
             var tick = 0
@@ -160,36 +162,44 @@ struct GameView: View {
                     // SwiftUI re-evaluation around the SCNView every tick
                     if vm.sceneCtrl.joystickVector != nj { vm.sceneCtrl.joystickVector = nj }
                 } else {
-                    let t: (Float, Float)
+                    // waypoint chains with real clearance from the car: the
+                    // straight legs to the late stops cross the body and the
+                    // walker grinds into the flank (stuck at x~1.5 in the logs)
+                    if phase != lastPhase { lastPhase = phase; leg = 0 }
+                    let chain: [(Float, Float)]
                     switch phase {
-                    case 1: t = (-1.7, 3.1)
-                    case 2: t = (1.7, 3.1)
-                    case 3: t = (0, -3.4)
-                    case 4: t = (2.6, -1.5)
-                    case 6: t = (-2.2, 1.95)   // in front of the FL wheel face
-                    case 7: t = (-3.2, -0.2)   // left side, full profile
-                    default: t = (1.30, 2.20)
+                    case 1: chain = [(-1.7, 3.1)]
+                    case 2: chain = [(1.7, 3.1)]
+                    case 3: chain = [(0, -3.4)]
+                    case 5: chain = [(3.8, 3.6), (1.55, 2.45)]   // bay close-up, swings wide of the nose
+                    case 6: chain = [(0.0, 3.8), (-2.6, 3.0)]    // FL wheel face, stays ahead of the nose
+                    case 7: chain = [(-3.4, 2.4), (-3.2, -0.2)]  // left flank out wide, then profile spot
+                    default: chain = [(2.6, -1.5)]
                     }
+                    if leg >= chain.count { leg = chain.count - 1 }
+                    let t = chain[leg]
                     let dx = t.0 - p.x, dz = t.1 - p.z
                     let d = hypotf(dx, dz)
-                    if d > 0.18 {
-                        // walk toward the parking spot (camera-relative movement)
+                    if d > 0.25 {
+                        // walk toward the waypoint (camera-relative movement)
                         vm.sceneCtrl.cameraYaw = atan2f(-dx, -dz)
                         let fwd = CGVector(dx: 0, dy: -0.55)
                         if vm.sceneCtrl.joystickVector != fwd { vm.sceneCtrl.joystickVector = fwd }
+                    } else if leg < chain.count - 1 {
+                        leg += 1
                     } else {
                         // parked: face the car
                         if vm.sceneCtrl.joystickVector != .zero { vm.sceneCtrl.joystickVector = .zero }
                         if phase == 5 {
-                            // engine-bay close-up: standing at the right fender (a pose any
-                            // player reaches with the stick), looking down into the bay
+                            // engine-bay close-up: standing ahead-right of the open
+                            // bay (a pose any player reaches), looking down into it
                             vm.sceneCtrl.cameraYaw = atan2f(p.x - 0, p.z - 1.30)
                             vm.sceneCtrl.cameraPitchOverride = -0.48
                         } else if phase == 6 {
                             // wheel-face close-up: aimed at the FL wheel center so the
                             // rim/spokes/brake are actually judgeable
                             vm.sceneCtrl.cameraYaw = atan2f(p.x - (-0.90), p.z - 1.38)
-                            vm.sceneCtrl.cameraPitchOverride = -0.55
+                            vm.sceneCtrl.cameraPitchOverride = -0.50
                         } else if phase == 7 {
                             // side profile at window height: roof vs glass read
                             vm.sceneCtrl.cameraYaw = atan2f(p.x, p.z)
