@@ -394,7 +394,193 @@ enum GarageBuilder {
         (neon.geometry as? SCNBox)?.materials = [neonMat]
         root.addChildNode(neon)
 
+        buildWorkshopDressing(into: root)
         buildToolStations(into: root)
+    }
+
+    // MARK: workshop dressing: ceiling, lift with project shell, shop props
+
+    private static func buildWorkshopDressing(into root: SCNNode) {
+        // ceiling: the void above the walls read as open night sky. Flat
+        // panel roof; it must NOT swallow the key light's shadows.
+        let ceilMat = Mat.flat(0.16, 0.16, 0.18, rough: 0.95)
+        let ceil = SCNNode(geometry: SCNBox(width: 16, height: 0.08, length: 12, chamferRadius: 0))
+        ceil.position = SCNVector3(0, 4.56, 0)
+        (ceil.geometry as? SCNBox)?.materials = [ceilMat]
+        ceil.castsShadow = false
+        root.addChildNode(ceil)
+
+        // fluorescent tube fixtures hanging from the ceiling
+        for (x, z) in [(Float(-4), Float(-2.5)), (Float(4), Float(-2.5)), (Float(-4), Float(2.5)), (Float(4), Float(2.5))] as [(Float, Float)] {
+            let housing = SCNNode(geometry: SCNBox(width: 1.6, height: 0.08, length: 0.24, chamferRadius: 0.01))
+            housing.position = SCNVector3(x, 4.42, z)
+            (housing.geometry as? SCNBox)?.materials = [Mat.steelDark]
+            housing.castsShadow = false
+            root.addChildNode(housing)
+            let tube = SCNNode(geometry: SCNBox(width: 1.45, height: 0.04, length: 0.12, chamferRadius: 0.02))
+            tube.position = SCNVector3(x, 4.36, z)
+            let tm = SCNMaterial()
+            tm.emission.contents = UIColor(red: 0.85, green: 0.92, blue: 1.0, alpha: 1)
+            tm.diffuse.contents = UIColor.black
+            (tube.geometry as? SCNBox)?.materials = [tm]
+            tube.castsShadow = false
+            root.addChildNode(tube)
+        }
+
+        // two-post lift with a project shell up on it, second bay (west).
+        // Full car, markers stripped: a waiting project, not a repair target.
+        let liftX: Float = -5.0
+        for dx in [-1.6, 1.6] as [Float] {
+            let post = SCNNode(geometry: SCNBox(width: 0.28, height: 2.7, length: 0.34, chamferRadius: 0.02))
+            post.position = SCNVector3(liftX + dx, 1.35, 0)
+            (post.geometry as? SCNBox)?.materials = [Mat.flat(0.16, 0.30, 0.55, rough: 0.45, metal: 0.6)]
+            root.addChildNode(post)
+            let carriage = SCNNode(geometry: SCNBox(width: 0.34, height: 0.22, length: 0.40, chamferRadius: 0.02))
+            carriage.position = SCNVector3(liftX + dx, 0.62, 0)
+            (carriage.geometry as? SCNBox)?.materials = [Mat.steelDark]
+            root.addChildNode(carriage)
+            for dz in [-0.85, 0.85] as [Float] {
+                let arm = SCNNode(geometry: SCNBox(width: 0.10, height: 0.06, length: 0.95, chamferRadius: 0.01))
+                arm.position = SCNVector3(liftX + dx * 0.62, 0.66, dz)
+                arm.eulerAngles.y = dx > 0 ? -0.5 : 0.5
+                (arm.geometry as? SCNBox)?.materials = [Mat.flat(0.75, 0.55, 0.10, rough: 0.5, metal: 0.4)]
+                root.addChildNode(arm)
+            }
+        }
+        let shell = CarAssembly(def: CarDef(name: "Garage Legend", tagline: "",
+                                            bodyRGB: (0.90, 0.90, 0.92), accentRGB: (0.10, 0.25, 0.85),
+                                            hasSpoiler: true, parts: GameContent.parts(wheelsMissing: false)))
+        for m in shell.markers.values { m.removeFromParentNode() }
+        shell.root.position = SCNVector3(liftX, 0.78, 0)
+        shell.root.eulerAngles.y = 0.06
+        root.addChildNode(shell.root)
+
+        // shop sign above the roll-up door
+        let sign = SCNNode(geometry: SCNPlane(width: 3.4, height: 0.78))
+        sign.position = SCNVector3(0, 3.85, 5.86)
+        sign.eulerAngles.y = .pi
+        let signMat = SCNMaterial()
+        signMat.diffuse.contents = AvatarNode.makeLabelImage(name: "CAR FLOPPER", color: UIColor(red: 0.35, green: 0.95, blue: 1.0, alpha: 1))
+        signMat.emission.contents = UIColor(white: 0.35, alpha: 1)
+        signMat.isDoubleSided = true
+        (sign.geometry as? SCNPlane)?.materials = [signMat]
+        sign.castsShadow = false
+        root.addChildNode(sign)
+
+        // floor jack near the bay
+        let jackBody = SCNNode(geometry: SCNBox(width: 0.65, height: 0.14, length: 0.28, chamferRadius: 0.03))
+        jackBody.position = SCNVector3(1.7, 0.07, 2.5)
+        jackBody.eulerAngles.y = 0.5
+        (jackBody.geometry as? SCNBox)?.materials = [Mat.flat(0.75, 0.55, 0.10, rough: 0.45, metal: 0.5)]
+        root.addChildNode(jackBody)
+        let jackArm = SCNNode(geometry: SCNCylinder(radius: 0.025, height: 0.85))
+        jackArm.position = SCNVector3(1.45, 0.35, 2.75)
+        jackArm.eulerAngles.z = 0.9
+        (jackArm.geometry as? SCNCylinder)?.materials = [Mat.steelDark]
+        root.addChildNode(jackArm)
+
+        // mechanic's creeper leaning on the workbench
+        let creeper = SCNNode(geometry: SCNBox(width: 0.45, height: 1.0, length: 0.06, chamferRadius: 0.03))
+        creeper.position = SCNVector3(-5.3, 0.5, -5.45)
+        creeper.eulerAngles.x = -0.35
+        (creeper.geometry as? SCNBox)?.materials = [Mat.flat(0.55, 0.12, 0.10, rough: 0.6)]
+        root.addChildNode(creeper)
+
+        // air compressor + wall hose reel, NE corner
+        let tank = SCNNode(geometry: SCNCylinder(radius: 0.26, height: 0.62))
+        tank.position = SCNVector3(7.3, 0.31, -4.9)
+        (tank.geometry as? SCNCylinder)?.materials = [Mat.flat(0.75, 0.12, 0.10, rough: 0.4, metal: 0.5)]
+        root.addChildNode(tank)
+        let motor = SCNNode(geometry: SCNBox(width: 0.3, height: 0.22, length: 0.3, chamferRadius: 0.03))
+        motor.position = SCNVector3(7.3, 0.72, -4.9)
+        (motor.geometry as? SCNBox)?.materials = [Mat.steelDark]
+        root.addChildNode(motor)
+        let reel = SCNNode(geometry: SCNCylinder(radius: 0.22, height: 0.12))
+        reel.position = SCNVector3(7.86, 1.9, -4.9)
+        reel.eulerAngles.z = .pi / 2
+        (reel.geometry as? SCNCylinder)?.materials = [Mat.flat(0.75, 0.55, 0.10, rough: 0.5, metal: 0.4)]
+        root.addChildNode(reel)
+
+        // shelf unit on the east wall with cans and boxes
+        for dz in [-0.8, 0.8] as [Float] {
+            let post = SCNNode(geometry: SCNBox(width: 0.06, height: 2.0, length: 0.5, chamferRadius: 0))
+            post.position = SCNVector3(7.72, 1.0, 1.0 + dz)
+            (post.geometry as? SCNBox)?.materials = [Mat.steelDark]
+            root.addChildNode(post)
+        }
+        for i in 0..<3 {
+            let board = SCNNode(geometry: SCNBox(width: 0.45, height: 0.05, length: 1.9, chamferRadius: 0))
+            board.position = SCNVector3(7.70, 0.45 + Float(i) * 0.65, 1.0)
+            (board.geometry as? SCNBox)?.materials = [Mat.flat(0.50, 0.52, 0.55, rough: 0.5, metal: 0.6)]
+            root.addChildNode(board)
+        }
+        for (z, h, c) in [(Float(0.35), Float(0.22), Mat.flat(0.80, 0.60, 0.10, rough: 0.5)),
+                          (Float(0.75), Float(0.18), Mat.flat(0.20, 0.35, 0.65, rough: 0.5)),
+                          (Float(1.25), Float(0.26), Mat.flat(0.75, 0.15, 0.12, rough: 0.5)),
+                          (Float(1.65), Float(0.15), Mat.steelDark),
+                          (Float(0.55), Float(0.20), Mat.wood),
+                          (Float(1.45), Float(0.24), Mat.flat(0.30, 0.55, 0.25, rough: 0.5))] as [(Float, Float, SCNMaterial)] {
+            let shelf = [Float(0.45), Float(1.10), Float(1.75)][Int(abs(z * 7)) % 3]
+            let can = SCNNode(geometry: SCNBox(width: 0.18, height: CGFloat(h), length: 0.18, chamferRadius: 0.02))
+            can.position = SCNVector3(7.68, shelf + 0.025 + h / 2, z)
+            (can.geometry as? SCNBox)?.materials = [c]
+            root.addChildNode(can)
+        }
+
+        // tripod work light aimed at the repair bay
+        for a in [Float(0), Float(2.1), Float(4.2)] {
+            let leg = SCNNode(geometry: SCNCylinder(radius: 0.02, height: 1.15))
+            leg.position = SCNVector3(2.6 + cosf(a) * 0.22, 0.55, 3.4 + sinf(a) * 0.22)
+            leg.eulerAngles.x = sinf(a) * 0.35
+            leg.eulerAngles.z = -cosf(a) * 0.35
+            (leg.geometry as? SCNCylinder)?.materials = [Mat.steelDark]
+            root.addChildNode(leg)
+        }
+        let pole = SCNNode(geometry: SCNCylinder(radius: 0.025, height: 1.7))
+        pole.position = SCNVector3(2.6, 0.85, 3.4)
+        (pole.geometry as? SCNCylinder)?.materials = [Mat.steelDark]
+        root.addChildNode(pole)
+        let head = SCNNode(geometry: SCNBox(width: 0.34, height: 0.24, length: 0.10, chamferRadius: 0.03))
+        head.position = SCNVector3(2.6, 1.75, 3.4)
+        head.eulerAngles.x = -0.5
+        (head.geometry as? SCNBox)?.materials = [Mat.flat(0.20, 0.20, 0.22, rough: 0.5, metal: 0.5)]
+        root.addChildNode(head)
+        let face = SCNNode(geometry: SCNPlane(width: 0.28, height: 0.18))
+        face.position = SCNVector3(2.6, 1.70, 3.34)
+        face.eulerAngles.x = -0.5
+        let fm = SCNMaterial()
+        fm.emission.contents = UIColor(red: 1.0, green: 0.95, blue: 0.80, alpha: 1)
+        fm.diffuse.contents = UIColor.black
+        (face.geometry as? SCNPlane)?.materials = [fm]
+        root.addChildNode(face)
+        let workLight = SCNLight()
+        workLight.type = .spot
+        workLight.color = UIColor(red: 1.0, green: 0.95, blue: 0.82, alpha: 1)
+        workLight.intensity = 380
+        workLight.spotInnerAngle = 32
+        workLight.spotOuterAngle = 55
+        workLight.attenuationStartDistance = 0.5
+        workLight.attenuationEndDistance = 7
+        let wlNode = SCNNode()
+        wlNode.light = workLight
+        wlNode.position = SCNVector3(2.6, 1.7, 3.35)
+        root.addChildNode(wlNode)
+        let wlTarget = SCNNode()
+        wlTarget.position = SCNVector3(0.4, 0.4, 0.6)
+        root.addChildNode(wlTarget)
+        wlNode.constraints = [SCNLookAtConstraint(target: wlTarget)]
+
+        // wall clock by the pegboard
+        let clockFace = SCNNode(geometry: SCNCylinder(radius: 0.16, height: 0.03))
+        clockFace.position = SCNVector3(-1.6, 2.9, -5.87)
+        clockFace.eulerAngles.x = .pi / 2
+        (clockFace.geometry as? SCNCylinder)?.materials = [Mat.flat(0.88, 0.88, 0.86, rough: 0.6)]
+        root.addChildNode(clockFace)
+        let hand = SCNNode(geometry: SCNBox(width: 0.02, height: 0.11, length: 0.01, chamferRadius: 0))
+        hand.position = SCNVector3(-1.6, 2.93, -5.84)
+        hand.eulerAngles.z = 0.7
+        (hand.geometry as? SCNBox)?.materials = [Mat.steelDark]
+        root.addChildNode(hand)
     }
 
     // MARK: tool stations: glowing spot + floating tool you walk into to equip
