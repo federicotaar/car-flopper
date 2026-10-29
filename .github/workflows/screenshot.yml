@@ -132,6 +132,8 @@ jobs:
           kill -INT $VIDPID || true
           sleep 3
           ls -la shots/
+
+      - name: App log tail
         if: always()
         run: |
           echo '--- log stream CFAUTODRIVE ---'
