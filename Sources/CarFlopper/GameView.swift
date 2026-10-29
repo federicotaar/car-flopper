@@ -16,16 +16,37 @@ struct GameView: View {
         // joystick movement pipeline (moveLocal clamps, heading, network sync),
         // facing the car the whole time. Player position changes continuously
         // across every capture: real walking, not just a camera pan.
+        // phase 0: closed-loop orbit (walking proof). phase 1/2: park at
+        // front-left / front-right so captures also show the car's front.
         DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
             print("[CFAUTODRIVE] orbit start")
+            var phase = 0
+            DispatchQueue.main.asyncAfter(deadline: .now() + 40.0) { phase = 1; print("[CFAUTODRIVE] park front-left") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 84.0) { phase = 2; print("[CFAUTODRIVE] park front-right") }
             Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
                 let p = vm.sceneCtrl.localPosition
-                // face the car center: camera forward is (-sin yaw, -cos yaw)
-                vm.sceneCtrl.cameraYaw = atan2f(p.x, p.z)
-                // keep orbit radius in [2.9, 3.4] so we never grind the car or the walls
-                let r = hypotf(p.x, p.z)
-                let inward: Float = r > 3.4 ? 0.35 : (r < 2.9 ? -0.35 : 0.0)
-                vm.joystick = CGVector(dx: 0.7, dy: Double(-inward))
+                if phase == 0 {
+                    // face the car center: camera forward is (-sin yaw, -cos yaw)
+                    vm.sceneCtrl.cameraYaw = atan2f(p.x, p.z)
+                    // keep orbit radius in [2.9, 3.4] so we never grind the car or the walls
+                    let r = hypotf(p.x, p.z)
+                    let inward: Float = r > 3.4 ? 0.35 : (r < 2.9 ? -0.35 : 0.0)
+                    vm.joystick = CGVector(dx: 0.7, dy: Double(-inward))
+                } else {
+                    let tx: Float = phase == 1 ? -1.7 : 1.7
+                    let tz: Float = 3.1
+                    let dx = tx - p.x, dz = tz - p.z
+                    let d = hypotf(dx, dz)
+                    if d > 0.18 {
+                        // walk toward the parking spot (camera-relative movement)
+                        vm.sceneCtrl.cameraYaw = atan2f(-dx, -dz)
+                        vm.joystick = CGVector(dx: 0, dy: -0.55)
+                    } else {
+                        // parked: face the car's front
+                        vm.joystick = .zero
+                        vm.sceneCtrl.cameraYaw = atan2f(p.x, p.z)
+                    }
+                }
             }
         }
         #endif
