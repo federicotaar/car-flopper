@@ -16,15 +16,32 @@ struct GameView: View {
         // joystick movement pipeline (moveLocal clamps, heading, network sync),
         // facing the car the whole time. Player position changes continuously
         // across every capture: real walking, not just a camera pan.
-        // phase 0: closed-loop orbit (walking proof). phase 1/2: park at
-        // front-left / front-right so captures also show the car's front.
+        // phase 0: closed-loop orbit (walking proof). phases 1/2/3: park at
+        // front-left, front-right and rear so captures cover the whole car.
         DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
             print("[CFAUTODRIVE] orbit start")
             var phase = 0
-            DispatchQueue.main.asyncAfter(deadline: .now() + 40.0) { phase = 1; print("[CFAUTODRIVE] park front-left") }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 84.0) { phase = 2; print("[CFAUTODRIVE] park front-right") }
+            var lastP = vm.sceneCtrl.localPosition
+            var stuckTicks = 0
+            var tick = 0
+            DispatchQueue.main.asyncAfter(deadline: .now() + 30.0) { phase = 1; print("[CFAUTODRIVE] park front-left") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 50.0) { phase = 2; print("[CFAUTODRIVE] park front-right") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 70.0) { phase = 3; print("[CFAUTODRIVE] park rear") }
             Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
                 let p = vm.sceneCtrl.localPosition
+                tick += 1
+                if tick % 50 == 0 { print("[CFAUTODRIVE] tick \(tick) pos \(p.x) \(p.z) phase \(phase)") }
+                let moved = hypotf(p.x - lastP.x, p.z - lastP.z)
+                let pushing = vm.joystick.dx != 0 || vm.joystick.dy != 0
+                if pushing && moved < 0.01 { stuckTicks += 1 } else { stuckTicks = 0 }
+                lastP = p
+                if stuckTicks > 5 {
+                    // grinding an obstacle (collision stops translation while the
+                    // stick keeps pushing): back straight off, then resume
+                    vm.joystick = CGVector(dx: 0, dy: 0.85)
+                    if stuckTicks > 12 { stuckTicks = 0 }
+                    return
+                }
                 if phase == 0 {
                     // face the car center: camera forward is (-sin yaw, -cos yaw)
                     vm.sceneCtrl.cameraYaw = atan2f(p.x, p.z)
@@ -33,16 +50,15 @@ struct GameView: View {
                     let inward: Float = r > 3.4 ? 0.35 : (r < 2.9 ? -0.35 : 0.0)
                     vm.joystick = CGVector(dx: 0.7, dy: Double(-inward))
                 } else {
-                    let tx: Float = phase == 1 ? -1.7 : 1.7
-                    let tz: Float = 3.1
-                    let dx = tx - p.x, dz = tz - p.z
+                    let t: (Float, Float) = phase == 1 ? (-1.7, 3.1) : (phase == 2 ? (1.7, 3.1) : (0, -3.4))
+                    let dx = t.0 - p.x, dz = t.1 - p.z
                     let d = hypotf(dx, dz)
                     if d > 0.18 {
                         // walk toward the parking spot (camera-relative movement)
                         vm.sceneCtrl.cameraYaw = atan2f(-dx, -dz)
                         vm.joystick = CGVector(dx: 0, dy: -0.55)
                     } else {
-                        // parked: face the car's front
+                        // parked: face the car
                         vm.joystick = .zero
                         vm.sceneCtrl.cameraYaw = atan2f(p.x, p.z)
                     }

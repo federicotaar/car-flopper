@@ -40,14 +40,16 @@ final class CarAssembly {
             root.addChildNode(skirt)
         }
 
-        // sloped hood (engine sits under it)
+        // hood propped open, hinged at its rear edge: mechanic-game look and
+        // the engine block is genuinely visible in the bay below it
         let hood = box(1.62, 0.07, 1.3, 0.03, [body])
         hood.position = SCNVector3(0, 0.90, 1.30)
-        hood.eulerAngles.x = 0.06
+        hood.pivot = SCNMatrix4MakeTranslation(0, 0, -0.60)
+        hood.eulerAngles.x = -0.85
         root.addChildNode(hood)
-        let engine = SCNNode(geometry: SCNBox(width: 1.0, height: 0.4, length: 0.9, chamferRadius: 0.04))
+        let engine = SCNNode(geometry: SCNBox(width: 1.05, height: 0.42, length: 0.95, chamferRadius: 0.04))
         (engine.geometry as? SCNBox)?.materials = [Mat.steelDark]
-        engine.position = SCNVector3(0, 0.72, 1.4)
+        engine.position = SCNVector3(0, 0.75, 1.35)
         engine.name = "part_engine"
         root.addChildNode(engine)
         partNodes["engine"] = engine
