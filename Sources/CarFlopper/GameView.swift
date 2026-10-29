@@ -198,7 +198,7 @@ struct GameView: View {
                         } else if phase == 6 {
                             // wheel-face close-up: aimed at the FL wheel center so the
                             // rim/spokes/brake are actually judgeable
-                            vm.sceneCtrl.cameraYaw = atan2f(p.x - (-0.90), p.z - 1.38)
+                            vm.sceneCtrl.cameraYaw = atan2f(p.x - (-0.74), p.z - 1.518)
                             vm.sceneCtrl.cameraPitchOverride = -0.50
                         } else if phase == 7 {
                             // side profile at window height: roof vs glass read
