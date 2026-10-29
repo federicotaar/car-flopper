@@ -394,6 +394,7 @@ struct SceneViewBridge: UIViewRepresentable {
         cam.camera?.vignettingIntensity = 0.4
         v.pointOfView = cam
         context.coordinator.camNode = cam
+        controller.attachHandIfNeeded(to: cam)
 
         let pan = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
         // one finger steers the camera; the other thumb keeps the joystick
@@ -421,6 +422,8 @@ struct SceneViewBridge: UIViewRepresentable {
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
 
         var pitch: Float = 0
+        private var lastYaw: Float = 0
+        private var lastPitch: Float = 0
 
         @objc func handlePan(_ g: UIPanGestureRecognizer) {
             let t = g.translation(in: g.view)
@@ -458,6 +461,20 @@ struct SceneViewBridge: UIViewRepresentable {
             // yaw about world Y, then pitch about the yawed X axis (FPS convention)
             let q = simd_quatf(angle: yaw, axis: SIMD3<Float>(0, 1, 0)) * simd_quatf(angle: effPitch, axis: SIMD3<Float>(1, 0, 0))
             camNode?.orientation = SCNQuaternion(q.vector.x, q.vector.y, q.vector.z, q.vector.w)
+
+            // first-person hand: walk bob from the stick, look sway from how
+            // fast the camera is turning (wrapped + clamped for pan spikes)
+            if dt > 0 {
+                var dyaw = yaw - lastYaw
+                if dyaw > .pi { dyaw -= 2 * .pi } else if dyaw < -.pi { dyaw += 2 * .pi }
+                let yawVel = max(-8, min(8, dyaw / dt))
+                let pitchVel = max(-8, min(8, (effPitch - lastPitch) / dt))
+                let jv = controller.joystickVector
+                let moveAmt = min(1, hypotf(Float(jv.dx), Float(jv.dy)))
+                controller.updateHand(dt: dt, move: moveAmt, yawVel: yawVel, pitchVel: pitchVel)
+            }
+            lastYaw = yaw
+            lastPitch = effPitch
         }
     }
 }
