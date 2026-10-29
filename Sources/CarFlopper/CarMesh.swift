@@ -191,7 +191,7 @@ enum CarMesh {
     // Greenhouse stations (cabin), same z reference. y0 = beltline, roof per z.
     static func greenhouseStations() -> [BodyStation] {
         var s: [BodyStation] = []
-        func st(_ z: Float, _ w: Float, _ t: Float, _ sq: Float = 1.7) {
+        func st(_ z: Float, _ w: Float, _ t: Float, _ sq: Float = 2.1) {
             s.append(BodyStation(z: z, floorY: 0.985, halfW: w, topY: t, square: sq, bay: false))
         }
         st(0.62, 0.55, 0.97)   // windshield base (cowl)
