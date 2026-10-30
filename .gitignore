@@ -1,0 +1,21 @@
+# Xcode / Swift
+.DS_Store
+*.xcuserstate
+*.xcuserdata/
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# xtool build output
+xtool/
+Resources/AppIcon60x60@2x.png
+Resources/AppIcon60x60@3x.png
+
+# Server
+server/.wrangler/
+node_modules/
+
+# Misc
+*.log

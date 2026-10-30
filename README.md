@@ -42,3 +42,44 @@ Funziona: lobby con codici stanza, 3D con camminata, riparazioni co-op in tempo 
 ---
 
 _Car Flopper non e' affiliato con nessuna casa automobilistica. Le auto sono modelli low-poly originali disegnati in codice._
+---
+
+## English
+
+### What is Car Flopper?
+Repair wrecked cars **together with your friends**, in 3D, directly on iPhone.
+
+One garage, one wrecked car, up to 4 mechanics connected by a 4-letter room code: walk around the garage, get close to a broken part, and hold to repair it. Two people on the same part repair faster. Fix everything to unlock the next car.
+
+### Download
+[![Download IPA](https://img.shields.io/badge/DOWNLOAD-latest%20IPA-orange?style=for-the-badge)](https://github.com/federicotaranudev/car-flopper/releases)
+
+### Install (iPhone, free)
+Requires a free Apple ID — no paid developer account.
+
+1. Install **AltStore** or **Sideloadly** on your computer.
+2. Download the `.ipa` from the link above.
+3. Install the IPA on your iPhone with AltStore/Sideloadly.
+4. With a free Apple ID the app must be re-signed every 7 days (AltStore does this automatically on the same Wi-Fi).
+
+### How to play
+- **Create garage**: generates a 4-letter code to send to friends.
+- **Join**: enter the code and pick a nickname. No account, no email.
+- **Repair**: left joystick to walk, drag on the right to look around. When close to a broken part a button appears: hold to repair.
+- **Co-op**: more people on the same part = faster repair.
+- **Unlock**: fix the car to move to the next. 3 cars: Rusty Coupe, Sideways 500, Garage Legend.
+
+### How it's built
+- **App**: native Swift + SceneKit (low-poly graphics built in code, zero paid assets).
+- **Multiplayer**: Cloudflare Worker + Durable Objects (WebSocket) on the free tier. Server lives in `server/`.
+- **Build**: GitHub Actions compiles an unsigned IPA on every push; every version is published in Releases.
+
+### Status
+Active development. The released build is an **unverified prerelease**: it compiles and the multiplayer server is online and tested, but the app has not yet been run on a real iPhone. It becomes a stable release after on-device testing.
+
+Works: room lobbies with codes, 3D walking, real-time co-op repairs, car unlocking. Bugs and ideas: open an issue.
+
+---
+
+_Car Flopper is not affiliated with any automaker. Cars are original low-poly models drawn in code._
+
