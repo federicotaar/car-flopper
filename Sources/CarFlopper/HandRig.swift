@@ -145,13 +145,14 @@ final class HandRig {
             head.geometry?.firstMaterial = HandRig.toolChrome
             head.position = SCNVector3(0, 0.01, -0.150)
             n.addChildNode(head)
-            let jawTorus = SCNTorus(ringRadius: 0.016, pipeRadius: 0.005)
-            jawTorus.arcAngle = .pi * 1.3 // open crescent, gap faces the working end
-            let jaw = SCNNode(geometry: jawTorus)
-            jaw.geometry?.firstMaterial = HandRig.toolChrome
-            jaw.eulerAngles = SCNVector3(0, .pi / 2, .pi * 0.325)
-            jaw.position = SCNVector3(0, 0.01, -0.170)
-            n.addChildNode(jaw)
+            // open-end jaw: two flat prongs angled apart, U gap between them
+            for side: Float in [-1.0, 1.0] {
+                let prong = SCNNode(geometry: SCNBox(width: 0.011, height: 0.010, length: 0.026, chamferRadius: 0.004))
+                prong.geometry?.firstMaterial = HandRig.toolChrome
+                prong.position = SCNVector3(0.010 * side, 0.01, -0.172)
+                prong.eulerAngles.y = -0.38 * side
+                n.addChildNode(prong)
+            }
         case "screwdriver":
             let grip = SCNNode(geometry: SCNCapsule(capRadius: 0.011, height: 0.075))
             grip.geometry?.firstMaterial = Mat.flat(0.80, 0.18, 0.12, rough: 0.5)
