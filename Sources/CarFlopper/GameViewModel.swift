@@ -21,6 +21,7 @@ final class GameViewModel: ObservableObject {
     @Published var connectionError: String?
 
     @Published var isRepairing = false
+    private var repairingPartId: String? = nil  // hold locks to this part
     @Published var heldTool: String? = nil   // nil = bare hands
     @Published var toolToast: String? = nil  // "Wrench equipped" flash
     private var pendingPickupTool: String? = nil   // station ring you stand in, not yet grabbed
@@ -149,7 +150,10 @@ final class GameViewModel: ObservableObject {
             }
         }
         // repairing must stop if we walk out of range or part got fixed
-        if isRepairing && activePart == nil { setRepairing(false) }
+        // the hold belongs to the part it started on: when that part
+        // completes (or the nearest-broken flips to a neighbor), stop.
+        // Fixing the next part takes a fresh press.
+        if isRepairing, activePart?.id != repairingPartId { setRepairing(false) }
         // haptics while repairing
         if isRepairing, now - hapticTimer > 0.25 {
             hapticTimer = now
@@ -172,10 +176,12 @@ final class GameViewModel: ObservableObject {
                 return
             }
             isRepairing = true
+            repairingPartId = p.id
             sceneCtrl.setHandWorking(true, tool: p.tool, atWorld: SCNVector3(p.x, p.y, p.z))
             session.sendRepair(part: p.id, on: true)
         } else {
             isRepairing = false
+            repairingPartId = nil
             sceneCtrl.setHandWorking(false, tool: nil)
             session.sendRepair(part: nil, on: false)
         }
