@@ -62,14 +62,14 @@ final class HandRig {
         let sleeveMat = Mat.flat(0.16, 0.19, 0.26, rough: 0.95)
 
         // forearm receding to the lower-right edge of the frame
-        let forearm = SCNNode(geometry: SCNCapsule(capRadius: 0.027, height: 0.24))
+        let forearm = SCNNode(geometry: SCNCapsule(capRadius: 0.021, height: 0.24))
         forearm.geometry?.firstMaterial = skin
-        forearm.position = SCNVector3(0.0453, -0.0648, 0.1550)
+        forearm.position = SCNVector3(0.0559, -0.0733, 0.0466)
         forearm.eulerAngles = SCNVector3(-2.378, -0.627, 3.209)
         wrist.addChildNode(forearm)
         let sleeve = SCNNode(geometry: SCNCapsule(capRadius: 0.033, height: 0.13))
         sleeve.geometry?.firstMaterial = sleeveMat
-        sleeve.position = SCNVector3(0.1043, -0.1550, 0.2278)
+        sleeve.position = SCNVector3(0.1148, -0.1634, 0.1194)
         sleeve.eulerAngles = SCNVector3(-2.378, -0.627, 3.209)
         wrist.addChildNode(sleeve)
 
