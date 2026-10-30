@@ -308,7 +308,7 @@ final class CarAssembly {
         // body-color patch carries the broken read (rusted, slightly ajar)
         // and sits flush with matching paint once fixed
         let door = box(0.03, 0.62, 1.10, 0.01, [body])
-        door.position = SCNVector3(-0.955, 0.62, -0.05)
+        door.position = SCNVector3(-0.832, 0.62, -0.05)
         door.name = "part_door"
         root.addChildNode(door)
         partNodes["door"] = door
