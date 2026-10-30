@@ -29,6 +29,7 @@ struct GameView: View {
             // round state: 0 idle, 1 walking to station, 2 holding fix, 3 done
             var round = 0
             var targetPart: String? = nil
+            var targetHot: SCNVector3? = nil
             var roundLabel = ""
             var roundIndex = 0
             let plan: [(stationTool: String, partId: String, label: String)] = [
@@ -67,6 +68,7 @@ struct GameView: View {
                     let part = r.partId.isEmpty ? defs.first(where: { $0.tool == tool && (vm.parts[$0.id]?.progress ?? 0) < 1 }) : defs.first(where: { $0.id == r.partId })
                     guard let part else { NSLog("[CFREPAIR] FAIL no part for \(roundLabel)"); return }
                     targetPart = part.id
+                    targetHot = SCNVector3(part.x, part.y, part.z)
                     round = 2
                     // stand OUTSIDE the car relative to the part: +0.5,+0.5 can
                     // land nearer a different broken part (exhaust vs wheelRR)
@@ -95,14 +97,25 @@ struct GameView: View {
                     targetPart = nil
                     progressSeen = false
                     round = 3
-                    vm.sceneCtrl.cameraPitchOverride = nil
-                    roundIndex += 1
-                    if roundIndex < plan.count {
-                        startRound(roundIndex)
-                    } else {
-                        NSLog("[CFREPAIR] all rounds OK")
-                        t.invalidate()
+                    // admire: hold the camera on the just-repaired part ~6.5s
+                    // so burst frames and video capture the REPAIRED state
+                    // before the next round walks away
+                    if let hot = targetHot {
+                        let cp = vm.sceneCtrl.localPosition
+                        let dd = max(0.001, hypotf(cp.x - hot.x, cp.z - hot.z))
+                        faceTarget(hot.x, hot.z, from: cp.x, cp.z, pitch: -atan2f(1.32 - hot.y, dd))
                     }
+                    roundIndex += 1
+                    let doneAll = roundIndex >= plan.count
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) {
+                        vm.sceneCtrl.cameraPitchOverride = nil
+                        if !doneAll {
+                            startRound(roundIndex)
+                        } else {
+                            NSLog("[CFREPAIR] all rounds OK")
+                        }
+                    }
+                    if doneAll { t.invalidate() }
                 }
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { startRound(0) }
