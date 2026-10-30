@@ -53,8 +53,8 @@ final class HandRig {
     // per-state tool presentation (smoothed in update like the pose):
     // idle lifts the shaft up-forward so a held tool stays in frame at rest;
     // work poses tip the working end down toward the part surface
-    private let toolRotIdle = SCNVector3(-0.45, 0.05, 0)
-    private var toolRot = SCNVector3(-0.45, 0.05, 0)
+    private let toolRotIdle = SCNVector3(0, .pi / 2, 0) // base spin: tool -z shaft -> -x working end (thumb side)
+    private var toolRot = SCNVector3(0, .pi / 2, 0)
 
     init() {
         build()
@@ -66,17 +66,13 @@ final class HandRig {
         pose.addChildNode(wrist)
 
         let skin = Mat.flat(0.87, 0.63, 0.50, rough: 0.6)
-        skin.isDoubleSided = true
         let sleeveMat = Mat.flat(0.16, 0.19, 0.26, rough: 0.95)
 
-        // the mesh hand now supplies a continuous anatomical forearm (bent
-        // onto this same channel and tucked into the sleeve), so no capsule:
-        // the old straight capsule dominated the silhouette and hid the palm
-        let sleeve = SCNNode(geometry: SCNCapsule(capRadius: 0.033, height: 0.13))
-        sleeve.geometry?.firstMaterial = sleeveMat
-        sleeve.position = SCNVector3(0.1148, -0.1634, 0.1194)
-        sleeve.eulerAngles = SCNVector3(-2.378, -0.627, 3.209)
-        wrist.addChildNode(sleeve)
+        // forearm + rolled sleeve are part of the mesh asset itself
+        // ("sleeve" entry: cuff extruded over the wrist shell, sleeve tint)
+        skin.isDoubleSided = true
+        sleeveMat.isDoubleSided = true
+        let handSleeve = HandMeshAsset.node("sleeve", material: sleeveMat)
 
         // mesh hand (CC0 human-hand, two baked poses) replaces the capsule
         // palm/fingers/thumb. relax = open hand; grip = closed fist around
@@ -84,17 +80,17 @@ final class HandRig {
         // rotated so fingers point forward (-z), palm down (-y).
         let handRelax = HandMeshAsset.node("relax", material: skin)
         let handGrip = HandMeshAsset.node("grip", material: skin)
-        for h in [handRelax, handGrip] {
+        for h in [handRelax, handGrip, handSleeve] {
             h.eulerAngles.x = -.pi / 2
             h.scale = SCNVector3(0.9, 0.9, 0.9)
-            h.position = SCNVector3(0, 0.0045, 0.099)
+            h.position = SCNVector3(0, 0.0045, -0.006)
             wrist.addChildNode(h)
         }
         handGrip.isHidden = true
         self.handRelax = handRelax
         self.handGrip = handGrip
 
-        toolAnchor.position = SCNVector3(0, -0.0225, -0.126)
+        toolAnchor.position = SCNVector3(-0.033, 0.038, -0.077) // inside the curled fist
         // tool presentation is per-state (see toolRot targets in update):
         // a forearm-axis tool is foreshortened to invisibility from the
         // first-person camera, so each state angles the shaft to read as a
@@ -121,6 +117,13 @@ final class HandRig {
             toolAnchor.addChildNode(n)
             toolNodes[t] = n
         }
+        // the pad rides the relax palm, not the grip anchor
+        if let d = toolNodes["diagnostics"] {
+            d.removeFromParentNode()
+            wrist.addChildNode(d)
+            d.position = SCNVector3(-0.036, -0.054, -0.144)
+            d.eulerAngles = SCNVector3(.pi / 2, 0, 0)
+        }
     }
 
     // hand-local tool materials: PBR + env + bloom blew the shared chrome out
@@ -136,46 +139,49 @@ final class HandRig {
             let shaft = SCNNode(geometry: SCNCylinder(radius: 0.0065, height: 0.170))
             shaft.geometry?.firstMaterial = HandRig.toolChrome
             shaft.eulerAngles.x = .pi / 2
-            shaft.position = SCNVector3(0, 0.01, 0.030)
+            shaft.position = SCNVector3(0, 0.01, -0.055)
             n.addChildNode(shaft)
             let head = SCNNode(geometry: SCNBox(width: 0.030, height: 0.011, length: 0.046, chamferRadius: 0.005))
             head.geometry?.firstMaterial = HandRig.toolChrome
-            head.position = SCNVector3(0, 0.01, -0.065)
+            head.position = SCNVector3(0, 0.01, -0.150)
             n.addChildNode(head)
-            let jaw = SCNNode(geometry: SCNTorus(ringRadius: 0.016, pipeRadius: 0.006))
+            let jawTorus = SCNTorus(ringRadius: 0.016, pipeRadius: 0.005)
+            jawTorus.arcAngle = .pi * 1.3 // open crescent, gap faces the working end
+            let jaw = SCNNode(geometry: jawTorus)
             jaw.geometry?.firstMaterial = HandRig.toolChrome
-            jaw.position = SCNVector3(0, 0.01, -0.087)
+            jaw.eulerAngles = SCNVector3(0, .pi / 2, .pi * 0.325)
+            jaw.position = SCNVector3(0, 0.01, -0.170)
             n.addChildNode(jaw)
         case "screwdriver":
             let grip = SCNNode(geometry: SCNCapsule(capRadius: 0.011, height: 0.075))
             grip.geometry?.firstMaterial = Mat.flat(0.80, 0.18, 0.12, rough: 0.5)
             grip.eulerAngles.x = .pi / 2
-            grip.position = SCNVector3(0, 0.012, 0.045)
+            grip.position = SCNVector3(0, 0.012, 0.005)
             n.addChildNode(grip)
             let shaft = SCNNode(geometry: SCNCylinder(radius: 0.0056, height: 0.115))
             shaft.geometry?.firstMaterial = HandRig.toolChrome
             shaft.eulerAngles.x = .pi / 2
-            shaft.position = SCNVector3(0, 0.012, -0.048)
+            shaft.position = SCNVector3(0, 0.012, -0.088)
             n.addChildNode(shaft)
             let tip = SCNNode(geometry: SCNCone(topRadius: 0.0015, bottomRadius: 0.0058, height: 0.016))
             tip.geometry?.firstMaterial = HandRig.toolChrome
             tip.eulerAngles.x = -.pi / 2
-            tip.position = SCNVector3(0, 0.012, -0.112)
+            tip.position = SCNVector3(0, 0.012, -0.152)
             n.addChildNode(tip)
         case "welder":
             let body = SCNNode(geometry: SCNBox(width: 0.024, height: 0.030, length: 0.085, chamferRadius: 0.007))
             body.geometry?.firstMaterial = Mat.flat(0.10, 0.10, 0.11, rough: 0.7)
-            body.position = SCNVector3(0, 0.016, 0.030)
+            body.position = SCNVector3(0, 0.016, -0.020)
             n.addChildNode(body)
             let nozzle = SCNNode(geometry: SCNCylinder(radius: 0.007, height: 0.055))
             nozzle.geometry?.firstMaterial = Mat.flat(0.75, 0.45, 0.20, rough: 0.35, metal: 0.8)
             nozzle.eulerAngles.x = .pi / 2
-            nozzle.position = SCNVector3(0, 0.016, -0.032)
+            nozzle.position = SCNVector3(0, 0.016, -0.082)
             n.addChildNode(nozzle)
         case "diagnostics":
             let pad = SCNNode(geometry: SCNBox(width: 0.150, height: 0.105, length: 0.011, chamferRadius: 0.006))
             pad.geometry?.firstMaterial = Mat.flat(0.09, 0.09, 0.10, rough: 0.4)
-            pad.position = SCNVector3(0, 0.040, 0.040)
+            pad.position = SCNVector3(0, 0.075, -0.055)
             pad.eulerAngles.x = -0.5
             n.addChildNode(pad)
             let sm = SCNMaterial()
@@ -298,29 +304,29 @@ final class HandRig {
             case "wrench":
                 target = aim ?? SCNVector3(0.03, -0.05, -0.33)
                 targetRot = SCNVector3(-0.10, -0.18, 0.05)
-                targetToolRot = SCNVector3(-0.523, 0.047, 0)
+                targetToolRot = toolRotIdle
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 6.5) * 0.42, 0, sinf(workTime * 6.5) * 0.10)
             case "screwdriver":
                 // land the tilted TIP on the part, not the fist: with the
                 // -0.75 tilt the tip sits ~0.10 below and ~0.12 beyond the
                 // grip, so aim the grip above-and-closer than the hotspot
-                if var a = aim { a.y += 0.07; a.z += 0.20; aim = a }
+                if var a = aim { a.y += 0.10; a.z += 0.12; aim = a }
                 target = aim ?? SCNVector3(0.02, -0.03, -0.31)
                 targetRot = SCNVector3(-0.08, -0.35, 0.0)
                 // shaft angled down-left so the tip meets the panel below
                 // the fist and the chrome shaft reads against the paint
-                targetToolRot = SCNVector3(-0.523, 0.047, 0)
+                targetToolRot = toolRotIdle
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 11) * 0.06, sinf(workTime * 11) * 0.30, 0)
             case "welder":
                 target = aim ?? SCNVector3(0.02, -0.06, -0.40)
                 targetRot = SCNVector3(-0.05, -0.25, 0.0)
-                targetToolRot = SCNVector3(-0.523, 0.047, 0)
+                targetToolRot = toolRotIdle
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 23) * 0.022, sinf(workTime * 19) * 0.018, 0)
                 updateArc(on: true, t: workTime)
             case "diagnostics":
                 target = aim ?? SCNVector3(0.0, -0.07, -0.33)
                 targetRot = SCNVector3(0.10, -0.10, 0.0)
-                targetToolRot = SCNVector3(0, 0, 0)
+                targetToolRot = toolRotIdle
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 1.8) * 0.03, 0, 0)
                 screenMat?.emission.intensity = 0.7 + 0.4 * CGFloat(abs(sinf(workTime * 3)))
             default:
@@ -377,7 +383,7 @@ final class HandRig {
                 l.attenuationStartDistance = 0.02
                 l.attenuationEndDistance = 0.9
                 an.light = l
-                an.position = SCNVector3(0, 0.016, -0.065)
+                an.position = SCNVector3(0, 0.016, -0.115)
                 welder.addChildNode(an)
                 arcNode = an
                 arcLight = l
