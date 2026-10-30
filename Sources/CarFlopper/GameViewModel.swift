@@ -21,6 +21,8 @@ final class GameViewModel: ObservableObject {
     @Published var connectionError: String?
 
     @Published var isRepairing = false
+    private var repairSent = false
+    private var stanceReadySince: TimeInterval?
     private var repairingPartId: String? = nil  // hold locks to this part
     @Published var heldTool: String? = nil   // nil = bare hands
     @Published var toolToast: String? = nil  // "Wrench equipped" flash
@@ -48,6 +50,10 @@ final class GameViewModel: ObservableObject {
 
     var activePart: PartDef? {
         sceneCtrl.nearestBrokenPart(parts: parts)?.0
+    }
+    var withinWorkingRange: Bool {
+        guard let p = activePart else { return false }
+        return sceneCtrl.inWorkingRange(p.id)
     }
     var activePartProgress: Double {
         guard let p = activePart else { return 0 }
@@ -153,7 +159,16 @@ final class GameViewModel: ObservableObject {
         // the hold belongs to the part it started on: when that part
         // completes (or the nearest-broken flips to a neighbor), stop.
         // Fixing the next part takes a fresh press.
-        if isRepairing, activePart?.id != repairingPartId { setRepairing(false) }
+        if isRepairing, activePart?.id != repairingPartId || !withinWorkingRange { setRepairing(false) }
+        if isRepairing, !repairSent, let id = repairingPartId {
+            if abs(sceneCtrl.cameraEyeHeight-sceneCtrl.workingEyeHeight) < 0.025 {
+                if stanceReadySince == nil { stanceReadySince = now }
+                if now - (stanceReadySince ?? now) >= 0.45 {
+                    session.sendRepair(part:id,on:true)
+                    repairSent = true
+                }
+            } else { stanceReadySince = nil }
+        }
         // haptics while repairing
         if isRepairing, now - hapticTimer > 0.25 {
             hapticTimer = now
@@ -164,6 +179,7 @@ final class GameViewModel: ObservableObject {
     func setRepairing(_ on: Bool) {
         guard on != isRepairing else { return }
         if on, let p = activePart {
+            guard sceneCtrl.inWorkingRange(p.id) else { return }
             guard heldTool == p.tool else {
                 // wrong tool (or bare hands): flash the need, never start
                 wrongToolFlash = true
@@ -177,13 +193,16 @@ final class GameViewModel: ObservableObject {
             }
             isRepairing = true
             repairingPartId = p.id
-            // aim at the part's marker ring (live world pos, hugs the part);
+            // Aim at the live transformed physical part point;
             // raw PartDef coords are car-local, NOT world - only a fallback
-            sceneCtrl.setHandWorking(true, tool: p.tool, atWorld: sceneCtrl.partAimWorld(p.id) ?? SCNVector3(p.x, p.y, p.z))
-            session.sendRepair(part: p.id, on: true)
+            sceneCtrl.setHandWorking(true, tool: p.tool, partId: p.id, atWorld: sceneCtrl.partAimWorld(p.id) ?? SCNVector3(p.x, p.y, p.z))
+            repairSent = false
+            stanceReadySince = nil
         } else {
             isRepairing = false
             repairingPartId = nil
+            repairSent = false
+            stanceReadySince = nil
             sceneCtrl.setHandWorking(false, tool: nil)
             session.sendRepair(part: nil, on: false)
         }

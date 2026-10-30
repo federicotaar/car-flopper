@@ -101,14 +101,16 @@ struct GameView: View {
                     // stand OUTSIDE the car relative to the part: +0.5,+0.5 can
                     // land nearer a different broken part (exhaust vs wheelRR)
                     // and the wrong-tool flash then silently blocks the hold
-                    let away: Float = 1.0
-                    let len = max(0.001, hypotf(part.x, part.z))
-                    let px = part.x + part.x / len * away
-                    let pz = part.z + part.z / len * away
-                    vm.sceneCtrl.localPosition = SCNVector3(px, 0, pz)
-                    // face the part and pitch down to its hotspot height so the
-                    // hold shows the hand working on the part in view
-                    faceTarget(part.x, part.z, from: px, pz, pitch: -atan2f(1.32 - part.y, away + 0.35))
+                    // Use the production close-working gate, without bypasses.
+                    let hot = vm.sceneCtrl.partAimWorld(part.id) ?? SCNVector3(part.x, part.y, part.z)
+                    var normal = vm.sceneCtrl.car?.repairNormalWorld(part.id) ?? SCNVector3(part.x,0,part.z)
+                    if hypotf(normal.x,normal.z) < 0.01 { normal = SCNVector3(0,0,1) }
+                    let len = max(0.001,hypotf(normal.x,normal.z))
+                    let px = hot.x + normal.x / len * 0.48
+                    let pz = hot.z + normal.z / len * 0.48
+                    vm.sceneCtrl.localPosition = SCNVector3(px,0,pz)
+                    let eye = part.id == "engine" ? Float(1.32) : max(0.60,min(1.32,hot.y+0.40))
+                    faceTarget(hot.x,hot.z,from:px,pz,pitch:-atan2f(eye-hot.y,0.48))
                     NSLog("[CFREPAIR] \(roundLabel): holding fix on \(part.id)")
                     vm.setRepairing(true)
                 }
@@ -393,7 +395,7 @@ struct GameView: View {
                 ProgressView(value: vm.activePartProgress)
                     .tint(.orange)
                     .frame(width: 90)
-                Text(vm.isRepairing ? "FIXING..." : (hasTool ? "HOLD TO FIX" : "NEED \(td?.label.uppercased() ?? "TOOL")"))
+                Text(vm.isRepairing ? "FIXING..." : (hasTool ? (vm.withinWorkingRange ? "HOLD TO FIX" : "MOVE CLOSER") : "NEED \(td?.label.uppercased() ?? "TOOL")"))
                     .font(.caption2.weight(.heavy))
                     .foregroundStyle(vm.wrongToolFlash ? Color.red : Color.white.opacity(0.9))
                 Image(systemName: td?.symbol ?? "wrench.and.screwdriver.fill")
@@ -559,7 +561,8 @@ struct SceneViewBridge: UIViewRepresentable {
             // first-person camera: at the player's head, yaw + pitch from the drag
             let yaw = controller.cameraYaw
             let effPitch = controller.cameraPitchOverride ?? pitch
-            camNode?.position = SCNVector3(controller.localPosition.x, 1.32, controller.localPosition.z)
+            controller.cameraEyeHeight += (controller.workingEyeHeight - controller.cameraEyeHeight) * min(1, dt * 8)
+            camNode?.position = SCNVector3(controller.localPosition.x, controller.cameraEyeHeight, controller.localPosition.z)
             // yaw about world Y, then pitch about the yawed X axis (FPS convention)
             let q = simd_quatf(angle: yaw, axis: SIMD3<Float>(0, 1, 0)) * simd_quatf(angle: effPitch, axis: SIMD3<Float>(1, 0, 0))
             camNode?.orientation = SCNQuaternion(q.vector.x, q.vector.y, q.vector.z, q.vector.w)

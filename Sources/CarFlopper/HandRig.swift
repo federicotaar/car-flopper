@@ -1,10 +1,11 @@
 import Foundation
 import SceneKit
 import UIKit
+import simd
 
 // MARK: - First-person hand rig (camera-space view model)
 //
-// A procedural right hand + forearm parented to the camera node, animated
+// A skinned-mesh right hand + continuous forearm parented to the camera node, animated
 // per frame from the renderer callback (the only place scene mutations are
 // race-free in this app). Drives three behaviours Fred asked for:
 //   - a moving hand: walk bob + look sway, always alive
@@ -18,6 +19,16 @@ final class HandRig {
     private let sway = SCNNode()  // bob + look sway (position offsets)
     private let pose = SCNNode()  // mode-driven base transform
     private let wrist = SCNNode() // oscillation pivot for work motions
+    private let tipRef = SCNNode() // marker node at the active tool's physical working end
+    private let forearmExt = SCNNode() // steered forearm tube (child of root, camera space)
+    // toolAnchor-local positions of each tool's working end (wrench jaw
+    // center, screwdriver bit end, welder nozzle end); the diagnostics pad
+    // has no tip and skips tip correction
+    private let tipLocal: [String: SCNVector3] = [
+        "wrench": SCNVector3(0, 0.010, -0.172),
+        "screwdriver": SCNVector3(0, 0.012, -0.160),
+        "welder": SCNVector3(0, 0.012, -0.1095),
+    ]
     private let toolAnchor = SCNNode()
 
     private var toolNodes: [String: SCNNode] = [:]
@@ -34,6 +45,7 @@ final class HandRig {
     private var pendingEquipWorld: SCNVector3?
     private var pendingWorking: (on: Bool, tool: String?, atWorld: SCNVector3?)?
     private var workTargetWorld: SCNVector3?
+    private var workNormalWorld: SCNVector3?
 
     private enum Mode { case idle, equip, working }
     private var mode: Mode = .idle
@@ -47,8 +59,8 @@ final class HandRig {
     //ADLOG private var logT: Float = 0
 
     // camera-space rest pose: lower right, forearm entering off-screen
-    private let restPos = SCNVector3(0.150, -0.115, -0.360)
-    private let restRot = SCNVector3(-0.28, -0.38, 0.10) // euler
+    private let restPos = SCNVector3(0.150, -0.075, -0.360)
+    private let restRot = SCNVector3(-1.571, -0.20, -0.45) // euler
 
     // per-state tool presentation (smoothed in update like the pose):
     // idle lifts the shaft up-forward so a held tool stays in frame at rest;
@@ -68,11 +80,9 @@ final class HandRig {
         let skin = Mat.flat(0.87, 0.63, 0.50, rough: 0.6)
         let sleeveMat = Mat.flat(0.16, 0.19, 0.26, rough: 0.95)
 
-        // forearm + rolled sleeve are part of the mesh asset itself
-        // ("sleeve" entry: cuff extruded over the wrist shell, sleeve tint)
-        skin.isDoubleSided = true
+                skin.isDoubleSided = true
         sleeveMat.isDoubleSided = true
-        let handSleeve = HandMeshAsset.node("sleeve", material: sleeveMat)
+
 
         // mesh hand (CC0 human-hand, two baked poses) replaces the capsule
         // palm/fingers/thumb. relax = open hand; grip = closed fist around
@@ -80,17 +90,25 @@ final class HandRig {
         // rotated so fingers point forward (-z), palm down (-y).
         let handRelax = HandMeshAsset.node("relax", material: skin)
         let handGrip = HandMeshAsset.node("grip", material: skin)
-        for h in [handRelax, handGrip, handSleeve] {
+        for h in [handRelax, handGrip] {
             h.eulerAngles.x = -.pi / 2
             h.scale = SCNVector3(1.0, 1.0, 1.0)
             h.position = SCNVector3(0, 0.0045, -0.006)
             wrist.addChildNode(h)
         }
+
+        // A single loft replaces the old bent sleeve and separate extension.
+        // Its first ring overlaps the measured skin wrist cross-section;
+        // later rings follow a curved path out of the camera view.
+        forearmExt.geometry = nil
+        forearmExt.name = "continuous-forearm"
+        root.addChildNode(forearmExt)
+        forearmMaterial = sleeveMat
         // real finger flex: grip and relax share topology (8120 verts), so a
         // morpher blends them - the fingers visibly squeeze while working.
         // morpher is a property of the NODE (SCNNode.morpher), verified
         // against Apple's SceneKit docs (var morpher: SCNMorpher?)
-        if let relaxGeo = handRelax.geometry {
+        if let relaxGeo = HandMeshAsset.node("squeeze", material: skin).geometry {
             let m = SCNMorpher()
             m.targets = [relaxGeo]
             handGrip.morpher = m
@@ -99,13 +117,14 @@ final class HandRig {
         self.handRelax = handRelax
         self.handGrip = handGrip
 
-        toolAnchor.position = SCNVector3(-0.037, 0.042, -0.085) // inside the curled fist (v9 fit: validated against the camera-space replica)
+        toolAnchor.position = SCNVector3(-0.030, 0.018, -0.090) // retained-grip channel, offline sample checked
         // tool presentation is per-state (see toolRot targets in update):
         // a forearm-axis tool is foreshortened to invisibility from the
         // first-person camera, so each state angles the shaft to read as a
         // diagonal without clipping the curled fingers
         toolAnchor.eulerAngles = toolRot
         wrist.addChildNode(toolAnchor)
+        toolAnchor.addChildNode(tipRef)
 
         pose.position = restPos
         pose.eulerAngles = restRot
@@ -132,8 +151,8 @@ final class HandRig {
         if let d = toolNodes["diagnostics"] {
             d.removeFromParentNode()
             wrist.addChildNode(d)
-            d.position = SCNVector3(-0.007, 0.087, -0.073)
-            d.eulerAngles = SCNVector3(0.15, 0, 0)
+            d.position = SCNVector3(-0.030, 0.030, -0.1825)
+            d.eulerAngles = SCNVector3(Float.pi / 2, 0, 0)
         }
     }
 
@@ -152,20 +171,20 @@ final class HandRig {
             shaft.eulerAngles.x = .pi / 2
             shaft.position = SCNVector3(0, 0.01, -0.055)
             n.addChildNode(shaft)
-            let head = SCNNode(geometry: SCNBox(width: 0.030, height: 0.011, length: 0.046, chamferRadius: 0.005))
+            let head = SCNNode(geometry: SCNBox(width: 0.037, height: 0.011, length: 0.025, chamferRadius: 0.005))
             head.geometry?.firstMaterial = HandRig.toolChrome
-            head.position = SCNVector3(0, 0.01, -0.150)
+            head.position = SCNVector3(0, 0.01, -0.146)
             n.addChildNode(head)
             // open-end jaw: two flat prongs angled apart, U gap between them
             for side: Float in [-1.0, 1.0] {
-                let prong = SCNNode(geometry: SCNBox(width: 0.011, height: 0.010, length: 0.026, chamferRadius: 0.004))
+                let prong = SCNNode(geometry: SCNBox(width: 0.009, height: 0.010, length: 0.028, chamferRadius: 0.004))
                 prong.geometry?.firstMaterial = HandRig.toolChrome
-                prong.position = SCNVector3(0.010 * side, 0.01, -0.172)
-                prong.eulerAngles.y = -0.38 * side
+                prong.position = SCNVector3(0.014 * side, 0.01, -0.172)
+                prong.eulerAngles.y = -0.12 * side
                 n.addChildNode(prong)
             }
         case "screwdriver":
-            let grip = SCNNode(geometry: SCNCapsule(capRadius: 0.011, height: 0.075))
+            let grip = SCNNode(geometry: SCNCapsule(capRadius: 0.007, height: 0.075))
             grip.geometry?.firstMaterial = Mat.flat(0.80, 0.18, 0.12, rough: 0.5)
             grip.eulerAngles.x = .pi / 2
             grip.position = SCNVector3(0, 0.012, 0.005)
@@ -181,16 +200,30 @@ final class HandRig {
             tip.position = SCNVector3(0, 0.012, -0.152)
             n.addChildNode(tip)
         case "welder":
-            let body = SCNNode(geometry: SCNBox(width: 0.024, height: 0.030, length: 0.085, chamferRadius: 0.007))
+            let body = SCNNode(geometry: SCNCapsule(capRadius: 0.007, height: 0.085))
             body.geometry?.firstMaterial = Mat.flat(0.10, 0.10, 0.11, rough: 0.7)
-            body.position = SCNVector3(0, 0.016, -0.020)
+            body.eulerAngles.x = .pi / 2
+            body.position = SCNVector3(0, 0.012, 0.0)
             n.addChildNode(body)
             let nozzle = SCNNode(geometry: SCNCylinder(radius: 0.007, height: 0.055))
             nozzle.geometry?.firstMaterial = Mat.flat(0.75, 0.45, 0.20, rough: 0.35, metal: 0.8)
             nozzle.eulerAngles.x = .pi / 2
-            nozzle.position = SCNVector3(0, 0.016, -0.082)
+            nozzle.position = SCNVector3(0, 0.012, -0.082)
             n.addChildNode(nozzle)
         case "diagnostics":
+            // Rugged tablet carry handle. Its round crossbar shares the
+            // finger channel; side struts clear both sides of the hand.
+            let bar = SCNNode(geometry: SCNCylinder(radius: 0.006, height: 0.15))
+            bar.eulerAngles.z = .pi / 2
+            bar.position = SCNVector3(0, 0.0925, 0)
+            bar.geometry?.firstMaterial = HandRig.toolSteelDark
+            n.addChildNode(bar)
+            for x: Float in [-0.070, 0.070] {
+                let strut = SCNNode(geometry: SCNBox(width: 0.012, height: 0.050, length: 0.012, chamferRadius: 0.004))
+                strut.position = SCNVector3(x, 0.0675, 0)
+                strut.geometry?.firstMaterial = HandRig.toolSteelDark
+                n.addChildNode(strut)
+            }
             let pad = SCNNode(geometry: SCNBox(width: 0.150, height: 0.105, length: 0.011, chamferRadius: 0.006))
             pad.geometry?.firstMaterial = Mat.flat(0.09, 0.09, 0.10, rough: 0.4)
             pad.position = SCNVector3(0, 0, 0)
@@ -217,6 +250,11 @@ final class HandRig {
     }
     func setWorking(_ on: Bool, tool: String?, atWorld: SCNVector3? = nil) {
         reqLock.lock(); pendingWorking = (on, tool, atWorld); reqLock.unlock()
+    }
+
+    func updateWorkTarget(_ p: SCNVector3, normal: SCNVector3?) {
+        workTargetWorld = p
+        workNormalWorld = normal
     }
 
     // MARK: - per-frame update (render queue only)
@@ -276,6 +314,12 @@ final class HandRig {
             sinf(phase) * 0.010 * bobAmp + sinf(phase * 0.31) * 0.0025 + swayY,
             0)
 
+        let reachable: Bool = {
+            guard let target = workTargetWorld, let cam = root.parent else { return false }
+            let p = cam.convertPosition(target, from: nil)
+            return sqrtf(p.x*p.x+p.y*p.y+p.z*p.z) <= 0.86
+        }()
+
         // mode behaviour
         var target = restPos
         var targetRot = restRot
@@ -288,88 +332,121 @@ final class HandRig {
             let T: Float = 0.85
             let p = min(1, equipT / T)
             // out-down toward the station, then back with the tool
-            let out = equipLocalTarget ?? SCNVector3(0.0, -0.24, -0.40)
+            var out = equipLocalTarget ?? SCNVector3(0.0, -0.09, -0.44)
+            // Keep the grasp visible; the old dip buried the hand below the
+            // screen exactly when the station tool switched into it.
+            out.y = max(-0.09,min(0.08,out.y))
+            out.z = min(-0.36,out.z)
             let k: Float = p < 0.4 ? (p / 0.4) : (1 - (p - 0.4) / 0.6)
             let e = k * k * (3 - 2 * k) // smoothstep
             target = SCNVector3(restPos.x + (out.x - restPos.x) * e,
                                 restPos.y + (out.y - restPos.y) * e,
                                 restPos.z + (out.z - restPos.z) * e)
-            targetRot = SCNVector3(restRot.x - 0.5 * e, restRot.y, restRot.z + 0.25 * e)
+            targetRot = SCNVector3(restRot.x - 0.15 * e, restRot.y, restRot.z + 0.10 * e)
             if p >= 0.45, let tool = _equipTool { showTool(tool) }
             if p >= 1 { mode = .idle }
         case .working:
             workTime += dt
-            // aim the hand at the actual part hotspot when the caller passed
-            // its world position, clamped to a natural reach envelope so the
-            // tool lands ON the part (wheel, door) instead of a fixed pose
+            // The working end follows the live transformed surface point.
             var aim: SCNVector3? = nil
             if let w = workTargetWorld, let cam = root.parent {
-                var t = cam.convertPosition(w, from: nil)
-                let L = sqrtf(t.x * t.x + t.y * t.y + t.z * t.z)
-                let maxR: Float = 0.40
-                if L > maxR { let sc = maxR / L; t = SCNVector3(t.x * sc, t.y * sc, t.z * sc) }
-                if t.z > -0.20 { t.z = -0.20 }
-                aim = t
+                aim = cam.convertPosition(w, from: nil)
             }
             switch workTool {
             case "wrench":
-                // sword grip: shaft along the fist bore, jaws land exactly on
-                // the aim (the part's marker ring, hugging the part). The
-                // wrist pivots about the wrist->tip axis, so the jaws stay
-                // PLANTED on the part through the whole ratchet swing.
+                // sword grip: shaft along the fist bore, jaws land on the
+                // aim (the part's marker ring, hugging the part). The wrist
+                // pivots about the wrist->tip axis; the tip solve after smoothing corrects its current transformed point.
                 if var a = aim { a.x += 0.141; a.y += 0.018; a.z += 0.196; aim = a }
                 target = aim ?? SCNVector3(0.14, -0.03, -0.20)
-                targetRot = SCNVector3(-1.886, -0.253, -1.530)
-                targetToolRot = SCNVector3(Float.pi / 2, 0, 0)
-                wrist.rotation = SCNVector4(-0.1537, 0.9385, -0.3094, sinf(workTime * 4.0) * 0.55)
+                targetRot = SCNVector3(-1.571, -0.20, -0.45)
+                targetToolRot = SCNVector3(0, Float.pi / 2, 0)
+                setWorkPivot(tool: workTool, angle: sinf(workTime * 4.0) * 0.55)
             case "screwdriver":
-                // sword grip: shaft along the fist bore, tip planted on the
-                // aim. Big fist roll about the wrist->tip axis reads as
-                // screw-turning; the tip cannot leave the panel.
+                // sword grip: shaft along the fist bore, bit on the aim.
+                // Big fist roll about the wrist->tip axis reads as
+                // screw-turning; the closed-loop correction keeps the bit
+                // tracking the ring on the panel.
                 if var a = aim { a.x += 0.132; a.y += 0.012; a.z += 0.173; aim = a }
                 target = aim ?? SCNVector3(0.13, -0.04, -0.22)
-                targetRot = SCNVector3(-1.886, -0.253, -1.530)
-                targetToolRot = SCNVector3(Float.pi / 2, 0, 0)
-                wrist.rotation = SCNVector4(-0.1693, 0.9266, -0.3368, sinf(workTime * 3.5) * 0.70)
+                targetRot = SCNVector3(-1.571, -0.20, -0.45)
+                targetToolRot = SCNVector3(0, Float.pi / 2, 0)
+                setWorkPivot(tool: workTool, angle: sinf(workTime * 3.5) * 0.70)
             case "welder":
                 // torch points steeply down-forward: body visible on the fist
                 // (contrast against skin, not navy sleeve), nozzle on the
                 // seam. Small tip stir (6mm) + wrist tremor = live weld pool.
                 if var a = aim { a.x += 0.069 + 0.006 * sinf(workTime * 2.3); a.y += 0.090 + 0.006 * cosf(workTime * 1.9); a.z += 0.128; aim = a }
                 target = aim ?? SCNVector3(0.07, 0.04, -0.27)
-                targetRot = SCNVector3(-1.571, -0.849, -1.571)
-                targetToolRot = SCNVector3(Float.pi / 2, 0, 0)
-                wrist.rotation = SCNVector4(-0.2140, 0.8901, -0.4035, sinf(workTime * 7.0) * 0.18)
+                targetRot = SCNVector3(-1.571, -0.20, -0.45)
+                targetToolRot = SCNVector3(0, Float.pi / 2, 0)
+                setWorkPivot(tool: workTool, angle: sinf(workTime * 7.0) * 0.18)
                 updateArc(on: true, t: workTime)
             case "diagnostics":
-                target = aim ?? SCNVector3(0.0, -0.07, -0.33)
-                targetRot = SCNVector3(0.10, -0.10, 0.0)
+                target = SCNVector3(0.12, -0.03, -0.40)
+                targetRot = SCNVector3(-1.571, -0.20, -0.45)
                 targetToolRot = toolRotIdle
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 1.8) * 0.10, sinf(workTime * 1.1) * 0.06, 0)
                 screenMat?.emission.intensity = 0.7 + 0.4 * CGFloat(abs(sinf(workTime * 3)))
             default:
                 break
             }
+
         }
         if mode == .working, let g = handGrip?.morpher {
-            // 0 = full grip; small relax pulse = visible finger squeeze
-            g.setWeight(CGFloat(max(0, 0.28 * (0.5 + 0.5 * sinf(workTime * 3.5)))), forTargetAt: 0)
+            // 0 = full grip; small relax pulse = visible finger squeeze,
+            // two retained-grip poses, rather than the old open-hand target
+            g.setWeight(CGFloat(max(0, 1.0 * (0.5 + 0.5 * sinf(workTime * 3.5)))), forTargetAt: 0)
         } else {
             handGrip?.morpher?.setWeight(0, forTargetAt: 0)
         }
         if mode != .working || workTool != "welder" { updateArc(on: false, t: 0) }
         if mode != .working || workTool != "diagnostics" { screenMat?.emission.intensity = 0.9 }
 
+        // Never grow a distant work pose while the stance is settling.
+        if mode == .working, workTool != "diagnostics", !reachable {
+            target = restPos; targetRot = restRot
+        }
         // smooth toward target pose
         let f = min(1, dt * 9)
         pose.position = SCNVector3(
             pose.position.x + (target.x - pose.position.x) * f,
             pose.position.y + (target.y - pose.position.y) * f,
             pose.position.z + (target.z - pose.position.z) * f)
-        pose.eulerAngles = SCNVector3(
-            pose.eulerAngles.x + (targetRot.x - pose.eulerAngles.x) * f,
-            pose.eulerAngles.y + (targetRot.y - pose.eulerAngles.y) * f,
-            pose.eulerAngles.z + (targetRot.z - pose.eulerAngles.z) * f)
+        if mode == .working, reachable, workTool != "diagnostics", let normal = workNormalWorld,
+           let parent = pose.parent {
+            let n = parent.convertVector(normal, from: nil)
+            let outward = simd_normalize(SIMD3<Float>(n.x,n.y,n.z))
+            var x: SIMD3<Float>, y: SIMD3<Float>, z: SIMD3<Float>
+            if workTool == "wrench" {
+                var shaft = SIMD3<Float>(-0.35,0.85,0)
+                shaft -= outward * simd_dot(shaft,outward)
+                shaft = simd_normalize(shaft)
+                x = -shaft; y = outward
+                z = simd_normalize(simd_cross(x,y)); x = simd_cross(y,z)
+            } else {
+                var inward = -outward
+                if workTool == "welder" {
+                    var tangent = SIMD3<Float>(0.8,0,-0.25)
+                    tangent -= outward * simd_dot(tangent,outward)
+                    tangent = simd_normalize(tangent)
+                    inward = simd_normalize(inward * 0.82 + tangent * 0.57)
+                }
+                x = -inward; z = SIMD3<Float>(0.55,-0.35,0.25)
+                z -= x * simd_dot(z,x)
+                if simd_length(z) < 0.01 { z = SIMD3<Float>(0,0,1) }
+                z = simd_normalize(z); y = simd_normalize(simd_cross(z,x))
+            }
+            let frame = simd_quatf(simd_float3x3(columns:(x,y,z)))
+            let roll: Float = workTool == "wrench" ? 0 : (workTool == "welder" ? 0.0 : 1.0)
+            let desired = frame * simd_quatf(angle:roll,axis:SIMD3<Float>(1,0,0))
+            pose.simdOrientation = simd_slerp(pose.simdOrientation, desired, f)
+        } else {
+            pose.eulerAngles = SCNVector3(
+                pose.eulerAngles.x + (targetRot.x - pose.eulerAngles.x) * f,
+                pose.eulerAngles.y + (targetRot.y - pose.eulerAngles.y) * f,
+                pose.eulerAngles.z + (targetRot.z - pose.eulerAngles.z) * f)
+        }
         let ntrx = toolRot.x + (targetToolRot.x - toolRot.x) * f
         let ntry_ = toolRot.y + (targetToolRot.y - toolRot.y) * f
         let ntrz = toolRot.z + (targetToolRot.z - toolRot.z) * f
@@ -379,6 +456,18 @@ final class HandRig {
         if mode != .working {
             wrist.eulerAngles = SCNVector3(wrist.eulerAngles.x * (1 - f), wrist.eulerAngles.y * (1 - f), wrist.eulerAngles.z * (1 - f))
         }
+        // Solve the current transformed physical tip after pose/tool smoothing.
+        // This deliberately does not project distant targets onto a camera-space
+        // reach sphere. Engine pixels must validate visual reach and contact.
+        if mode == .working, reachable, workTool != "diagnostics", let w = workTargetWorld,
+           let parent = pose.parent {
+            let goal = parent.convertPosition(w, from: nil)
+            let tip = tipRef.convertPosition(SCNVector3Zero, to: parent)
+            pose.position = SCNVector3(pose.position.x + goal.x - tip.x,
+                                       pose.position.y + goal.y - tip.y,
+                                       pose.position.z + goal.z - tip.z)
+        }
+        updateForearmExt()
         //ADLOG logT += dt
         //ADLOG if logT >= 1 {
         //ADLOG     logT = 0
@@ -394,10 +483,60 @@ final class HandRig {
 
     private func showTool(_ tool: String) {
         for (id, n) in toolNodes { n.isHidden = (id != tool) }
+        tipRef.position = tipLocal[tool] ?? SCNVector3Zero
         currentTool = tool
         _equipTool = tool
         handRelax?.isHidden = true
         handGrip?.isHidden = false
+    }
+
+    private var forearmMaterial: SCNMaterial?
+    private func setWorkPivot(tool: String, angle: Float) {
+        guard tipLocal[tool] != nil else { return }
+        // Work motion turns about the actual shaft direction. The separate
+        // physical-tip solve translates its end back onto the live surface.
+        let d = tool == "wrench" ? SCNVector3(0,1,0) : toolAnchor.convertVector(SCNVector3(0,0,-1), to: wrist)
+        let v = simd_normalize(SIMD3<Float>(d.x,d.y,d.z))
+        wrist.rotation = SCNVector4(v.x,v.y,v.z,angle)
+    }
+    private func updateForearmExt() {
+        let nr = 28, ns = 20
+        let end = SIMD3<Float>(0.65, -0.45, 0.12)
+        let cuff = SCNVector3(-0.022, 0.048, -0.037)
+        let c = wrist.convertPosition(cuff, to: root)
+        let c0 = SIMD3<Float>(c.x,c.y,c.z)
+        let vz = wrist.convertVector(SCNVector3(0,0,1), to: root)
+        let tangent = simd_normalize(SIMD3<Float>(vz.x,vz.y,vz.z))
+        let c1 = c0 + tangent * 0.04
+        let c2 = end - SIMD3<Float>(0.12,-0.10,0.15)
+        let vx = wrist.convertVector(SCNVector3(1,0,0), to: root)
+        let vy = wrist.convertVector(SCNVector3(0,1,0), to: root)
+        let ux = SIMD3<Float>(vx.x,vx.y,vx.z)
+        let uy = SIMD3<Float>(vy.x,vy.y,vy.z)
+        var vertices = [SCNVector3](), normals = [SCNVector3](), indices = [Int32]()
+        for j in 0...ns {
+            let t = Float(j) / Float(ns), a = 1 - t
+            let center = c0 * (a*a*a) + c1 * (3*a*a*t) + c2 * (3*a*t*t) + end * (t*t*t)
+            let der = (c1-c0) * (3*a*a) + (c2-c1) * (6*a*t) + (end-c2) * (3*t*t)
+            let q = simd_quatf(from: tangent, to: simd_normalize(der))
+            let scale: Float = 1 + 0.45*t
+            for i in 0..<nr {
+                let ang = Float(i) * 2 * Float.pi / Float(nr)
+                let radial = q.act(ux * (0.035*cosf(ang)) + uy * (0.021*sinf(ang)))
+                let v = center + radial * scale
+                let n = simd_normalize(radial)
+                vertices.append(SCNVector3(v.x,v.y,v.z)); normals.append(SCNVector3(n.x,n.y,n.z))
+                if j > 0 {
+                    let a = Int32((j-1)*nr+i), b = Int32((j-1)*nr+(i+1)%nr)
+                    let c = Int32(j*nr+(i+1)%nr), d = Int32(j*nr+i)
+                    indices += [a,b,c,a,c,d]
+                }
+            }
+        }
+        let geo = SCNGeometry(sources: [SCNGeometrySource(vertices: vertices), SCNGeometrySource(normals: normals)],
+                              elements: [SCNGeometryElement(indices: indices, primitiveType: .triangles)])
+        if let m = forearmMaterial { geo.materials = [m] }
+        forearmExt.geometry = geo
     }
 
     // welder arc: small flickering light at the nozzle while welding

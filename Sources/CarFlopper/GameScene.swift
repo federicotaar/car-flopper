@@ -14,6 +14,8 @@ final class GameSceneController: NSObject {
     var localPosition = SCNVector3(0, 0, 3.5)
     var localHeading: Float = .pi // facing -z toward car
     var cameraYaw: Float = 0 // first person: looking -z, straight at the car
+    var cameraEyeHeight: Float = 1.32
+    var workingEyeHeight: Float = 1.32
     var cameraPitchOverride: Float? = nil // showcase close-ups only; nil = drag pitch
     // joystick vector lives here (plain var, no SwiftUI publishing): writing
     // @Published state at gesture-event rate re-renders the whole view tree
@@ -63,23 +65,26 @@ final class GameSceneController: NSObject {
             scene.rootNode.childNode(withName: "stationTool-\(st.tool)", recursively: true)?.isHidden = (st.tool == held)
         }
     }
-    func setHandWorking(_ on: Bool, tool: String?, atWorld: SCNVector3? = nil) { handRig?.setWorking(on, tool: tool, atWorld: atWorld) }
+    private var handWorkPartId: String?
+    func setHandWorking(_ on: Bool, tool: String?, partId: String? = nil, atWorld: SCNVector3? = nil) {
+        handWorkPartId = on ? partId : nil
+        if on, let id = partId, id != "engine", let point = partAimWorld(id) {
+            workingEyeHeight = max(0.60, min(1.32, point.y + 0.40))
+        } else { workingEyeHeight = 1.32 }
+        handRig?.setWorking(on, tool: tool, atWorld: atWorld)
+    }
 
-    // Repair-hand aim: the PHYSICAL part surface point in world space, so
-    // the tool visibly works on the part itself; the marker ring hugs the
-    // same spot as a supporting label. Offsets are car-local (= world while
-    // the car sits at the garage origin, same convention as PartDef); the
-    // door pivot is its front hinge, so pull back onto the panel skin.
-    private let surfaceAimOffset: [String: SCNVector3] = [
-        "door": SCNVector3(-0.07, 0.0, -0.55),
-    ]
+    // Use the transformed physical part point, never the supporting marker.
     func partAimWorld(_ id: String) -> SCNVector3? {
-        guard let n = car?.partNodes[id] else { return nil }
-        let w = n.worldPosition
-        let o = surfaceAimOffset[id] ?? SCNVector3Zero
-        return SCNVector3(w.x + o.x, w.y + o.y, w.z + o.z)
+        if let p = car?.repairPointWorld(id) { return p }
+        return car?.partNodes[id]?.worldPosition
+    }
+    func inWorkingRange(_ id: String) -> Bool {
+        guard let p = partAimWorld(id) else { return false }
+        return hypotf(p.x-localPosition.x, p.z-localPosition.z) <= (id == "engine" ? 1.30 : 0.70)
     }
     func updateHand(dt: Float, move: Float, yawVel: Float, pitchVel: Float) {
+        if let id = handWorkPartId, let p = partAimWorld(id) { handRig?.updateWorkTarget(p, normal: car?.repairNormalWorld(id)) }
         handRig?.update(dt: dt, move: move, yawVel: yawVel, pitchVel: pitchVel)
     }
 
