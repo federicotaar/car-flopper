@@ -406,7 +406,8 @@ final class CarAssembly {
 
     // Visual state per part: broken (dark + marker) -> fixed (clean, marker removed)
     func setPart(_ id: String, progress: Float) {
-        guard let node = partNodes[id] else { return }
+        guard let node = partNodes[id] else { NSLog("[CFPART] setPart %@ progress=%.2f SKIP no node", id, progress); return }
+        NSLog("[CFPART] setPart %@ progress=%.2f attached=%d hidden=%d euler=(%.3f,%.3f,%.3f) diffuse=%@", id, progress, node.scene != nil, node.isHidden, node.eulerAngles.x, node.eulerAngles.y, node.eulerAngles.z, String(describing: node.geometry?.firstMaterial?.diffuse.contents))
         let fixed = progress >= 1
         markers[id]?.isHidden = fixed
         let brokenTint = UIColor(red: 0.25, green: 0.20, blue: 0.18, alpha: 1)
@@ -426,6 +427,7 @@ final class CarAssembly {
         } else if id == "door" {
             if !fixed { node.geometry?.materials = [Mat.flat(def.bodyRGB.0 * 0.4, def.bodyRGB.1 * 0.4, def.bodyRGB.2 * 0.4, rough: 0.9)] ; node.eulerAngles.y = 0.18 }
             else { node.geometry?.materials = [Mat.flat(def.bodyRGB.0, def.bodyRGB.1, def.bodyRGB.2, rough: 0.25, metal: 0.85)]; node.eulerAngles.y = 0 }
+            NSLog("[CFDOOR] after setPart fixed=%d eulerY=%.3f diffuse=%@", fixed, node.eulerAngles.y, String(describing: node.geometry?.firstMaterial?.diffuse.contents))
         }
         _ = brokenTint
     }
