@@ -363,15 +363,14 @@ final class HandRig {
                 targetToolRot = SCNVector3(0, Float.pi / 2, 0)
                 setWorkPivot(tool: workTool, angle: sinf(workTime * 4.0) * 0.55)
             case "screwdriver":
-                // sword grip: shaft along the fist bore, bit on the aim.
-                // Big fist roll about the wrist->tip axis reads as
-                // screw-turning; the closed-loop correction keeps the bit
+                // Normal approach: shaft along the retained finger channel, bit on screw.
+                // A small axial wrist turn reads as screw-turning; the closed-loop correction keeps the bit
                 // tracking the ring on the panel.
                 if var a = aim { a.x += 0.132; a.y += 0.012; a.z += 0.173; aim = a }
                 target = aim ?? SCNVector3(0.13, -0.04, -0.22)
                 targetRot = SCNVector3(-1.571, -0.20, -0.45)
                 targetToolRot = SCNVector3(0, Float.pi / 2, 0)
-                setWorkPivot(tool: workTool, angle: sinf(workTime * 3.5) * 0.70)
+                setWorkPivot(tool: workTool, angle: sinf(workTime * 3.5) * 0.35)
             case "welder":
                 // torch points steeply down-forward: body visible on the fist
                 // (contrast against skin, not navy sleeve), nozzle on the
@@ -438,7 +437,7 @@ final class HandRig {
                 z = simd_normalize(z); y = simd_normalize(simd_cross(z,x))
             }
             let frame = simd_quatf(simd_float3x3(columns:(x,y,z)))
-            let roll: Float = workTool == "wrench" ? 0 : (workTool == "welder" ? 0.0 : 1.0)
+            let roll: Float = workTool == "wrench" ? 0 : (workTool == "welder" ? -0.5 : 0.0)
             let desired = frame * simd_quatf(angle:roll,axis:SIMD3<Float>(1,0,0))
             pose.simdOrientation = simd_slerp(pose.simdOrientation, desired, f)
         } else {
@@ -501,14 +500,14 @@ final class HandRig {
     }
     private func updateForearmExt() {
         let nr = 28, ns = 20
-        let end = SIMD3<Float>(0.65, -0.45, 0.12)
+        let end = SIMD3<Float>(0.38, -0.38, 0.02)
         let cuff = SCNVector3(-0.022, 0.048, -0.037)
         let c = wrist.convertPosition(cuff, to: root)
         let c0 = SIMD3<Float>(c.x,c.y,c.z)
         let vz = wrist.convertVector(SCNVector3(0,0,1), to: root)
         let tangent = simd_normalize(SIMD3<Float>(vz.x,vz.y,vz.z))
-        let c1 = c0 + tangent * 0.04
-        let c2 = end - SIMD3<Float>(0.12,-0.10,0.15)
+        let c1 = c0 + tangent * 0.10
+        let c2 = end - SIMD3<Float>(0.22,-0.07,0.08)
         let vx = wrist.convertVector(SCNVector3(1,0,0), to: root)
         let vy = wrist.convertVector(SCNVector3(0,1,0), to: root)
         let ux = SIMD3<Float>(vx.x,vx.y,vx.z)
@@ -519,7 +518,7 @@ final class HandRig {
             let center = c0 * (a*a*a) + c1 * (3*a*a*t) + c2 * (3*a*t*t) + end * (t*t*t)
             let der = (c1-c0) * (3*a*a) + (c2-c1) * (6*a*t) + (end-c2) * (3*t*t)
             let q = simd_quatf(from: tangent, to: simd_normalize(der))
-            let scale: Float = 1 + 0.45*t
+            let scale: Float = 1 + 0.70*t
             for i in 0..<nr {
                 let ang = Float(i) * 2 * Float.pi / Float(nr)
                 let radial = q.act(ux * (0.035*cosf(ang)) + uy * (0.021*sinf(ang)))
@@ -550,14 +549,27 @@ final class HandRig {
                 l.attenuationStartDistance = 0.02
                 l.attenuationEndDistance = 0.9
                 an.light = l
+                let pool = SCNSphere(radius:0.0045)
+                pool.segmentCount = 12
+                let glow = SCNMaterial()
+                glow.lightingModel = .constant
+                glow.diffuse.contents = UIColor(red:0.70,green:0.87,blue:1,alpha:1)
+                glow.emission.contents = UIColor(red:0.45,green:0.72,blue:1,alpha:1)
+                glow.emission.intensity = 2.5
+                pool.firstMaterial = glow
+                an.geometry = pool
                 an.position = tipLocal["welder"] ?? SCNVector3(0,0.012,-0.1495)
                 welder.addChildNode(an)
                 arcNode = an
                 arcLight = l
             }
+            arcNode?.isHidden = false
+            let pulse = 0.8 + 0.25 * abs(sinf(t * 31))
+            arcNode?.scale = SCNVector3(pulse,pulse,pulse)
             arcLight?.intensity = CGFloat(500 + 450 * abs(sinf(t * 31)) + 150 * abs(sinf(t * 47)))
         } else {
             arcLight?.intensity = 0
+            arcNode?.isHidden = true
         }
     }
 }

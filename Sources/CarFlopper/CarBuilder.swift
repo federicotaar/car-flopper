@@ -443,7 +443,7 @@ final class CarAssembly {
                                              anchor.position.y + (haloLift[p.id] ?? 0.10),
                                              pz)
             }
-            let ring = SCNNode(geometry: SCNTorus(ringRadius: 0.12, pipeRadius: 0.012))
+            let ring = SCNNode(geometry: SCNTorus(ringRadius: 0.027, pipeRadius: 0.002))
             let m = SCNMaterial()
             m.emission.contents = GameContent.tools[p.tool]?.color ?? UIColor(red: 1, green: 0.15, blue: 0.1, alpha: 1)
             m.diffuse.contents = UIColor.black
@@ -512,7 +512,7 @@ final class CarAssembly {
                                      semantic: .normal, vectorCount: n,
                                      usesFloatComponents: true, componentsPerVector: 3,
                                      bytesPerComponent: 4, dataOffset: 0, dataStride: 12)
-        let el = SCNGeometryElement(indices: doorSkinIdx.map(Int.init), primitiveType: .triangles)
+        let el = SCNGeometryElement(indices: doorSkinIdx, primitiveType: .triangles)
         return SCNGeometry(sources: [psrc, nsrc], elements: [el])
     }
 
