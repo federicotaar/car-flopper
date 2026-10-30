@@ -131,7 +131,7 @@ jobs:
           # 12s engine hold, wrench equip reach, 7s wheel hold, plus margin
           xcrun simctl io cf-shot recordVideo shots/repair-motion.mp4 &
           VIDPID=$!
-          for i in $(seq 1 15); do
+          for i in $(seq 1 21); do
             sleep 5
             xcrun simctl io cf-shot screenshot "shots/repair-$(printf %02d $i).png" || true
           done
