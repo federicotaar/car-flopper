@@ -358,7 +358,10 @@ final class CarAssembly {
 
         // repair markers: small halo rings hugging the broken part, one slow
         // spin + gentle pulse, colored per required tool. No floating pyramids.
-        let haloLift: [String: Float] = ["exhaust": 0.30, "engine": 0.42, "windshield": 0.40]
+        // markers HUG the part: the ring center is the repair target the hand
+        // aims at, so ring, physical surface and tool tip share one anchor.
+        // Billboarding (below) keeps the ring a full circle against the body.
+        let haloLift: [String: Float] = ["exhaust": 0.10, "engine": 0.12, "windshield": 0.10]
         // the door node sits at its front-edge hinge for the ajar pivot; pull
         // its marker ring back to mid-door so it marks the panel, not the fender
         let markerZNudge: [String: Float] = ["door": -0.55]
@@ -372,7 +375,7 @@ final class CarAssembly {
             // wheels' rings toward the bumper and the arch lip still clips
             // them. Centerline parts (engine, windshield, exhaust) push
             // radially away from the body axis.
-            let push: Float = 0.30
+            let push: Float = 0.14
             let flank = abs(anchor.position.x) > 0.5
             let alen = max(0.001, hypotf(anchor.position.x, anchor.position.z))
             let px = flank ? anchor.position.x + (anchor.position.x >= 0 ? push : -push)
@@ -380,7 +383,7 @@ final class CarAssembly {
             let pz = flank ? anchor.position.z + (markerZNudge[p.id] ?? 0)
                            : anchor.position.z + anchor.position.z / alen * push
             holder.position = SCNVector3(px,
-                                         anchor.position.y + (haloLift[p.id] ?? 0.40),
+                                         anchor.position.y + (haloLift[p.id] ?? 0.10),
                                          pz)
             let ring = SCNNode(geometry: SCNTorus(ringRadius: 0.12, pipeRadius: 0.012))
             let m = SCNMaterial()

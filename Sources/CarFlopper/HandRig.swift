@@ -86,6 +86,13 @@ final class HandRig {
             h.position = SCNVector3(0, 0.0045, -0.006)
             wrist.addChildNode(h)
         }
+        // real finger flex: grip and relax share topology (8120 verts), so a
+        // morpher blends them - the fingers visibly squeeze while working
+        if let gripGeo = handGrip.geometry, let relaxGeo = handRelax.geometry {
+            let m = SCNMorpher()
+            m.targets = [relaxGeo]
+            gripGeo.morpher = m
+        }
         handGrip.isHidden = true
         self.handRelax = handRelax
         self.handGrip = handGrip
@@ -96,6 +103,10 @@ final class HandRig {
         // first-person camera, so each state angles the shaft to read as a
         // diagonal without clipping the curled fingers
         toolAnchor.eulerAngles = toolRot
+        // relax the work-motion pivot when not repairing
+        if mode != .working {
+            wrist.eulerAngles = SCNVector3(wrist.eulerAngles.x * (1 - f), wrist.eulerAngles.y * (1 - f), wrist.eulerAngles.z * (1 - f))
+        }
         wrist.addChildNode(toolAnchor)
 
         pose.position = restPos
@@ -305,40 +316,48 @@ final class HandRig {
             switch workTool {
             case "wrench":
                 // sword grip: shaft along the fist bore, jaws land exactly on
-                // the hotspot (camera-space replica fit, ctor3): fixed
-                // palm-left pose, hand offset so the tool tip touches the aim
+                // the aim (the part's marker ring, hugging the part). The
+                // wrist pivots about the wrist->tip axis, so the jaws stay
+                // PLANTED on the part through the whole ratchet swing.
                 if var a = aim { a.x += 0.141; a.y += 0.018; a.z += 0.196; aim = a }
                 target = aim ?? SCNVector3(0.14, -0.03, -0.20)
                 targetRot = SCNVector3(-1.886, -0.253, -1.530)
                 targetToolRot = SCNVector3(Float.pi / 2, 0, 0)
-                wrist.eulerAngles = SCNVector3(sinf(workTime * 6.5) * 0.08, sinf(workTime * 6.5) * 0.42, 0)
+                wrist.rotation = SCNVector4(-0.1537, 0.9385, -0.3094, sinf(workTime * 4.0) * 0.55)
             case "screwdriver":
-                // sword grip: shaft along the fist bore, tip lands exactly on
-                // the hotspot (camera-space replica fit, ctor3A); the wrist
-                // twist below is about the shaft axis = turning the screw
+                // sword grip: shaft along the fist bore, tip planted on the
+                // aim. Big fist roll about the wrist->tip axis reads as
+                // screw-turning; the tip cannot leave the panel.
                 if var a = aim { a.x += 0.132; a.y += 0.012; a.z += 0.173; aim = a }
                 target = aim ?? SCNVector3(0.13, -0.04, -0.22)
                 targetRot = SCNVector3(-1.886, -0.253, -1.530)
                 targetToolRot = SCNVector3(Float.pi / 2, 0, 0)
-                wrist.eulerAngles = SCNVector3(sinf(workTime * 11) * 0.06, sinf(workTime * 11) * 0.30, 0)
+                wrist.rotation = SCNVector4(-0.1693, 0.9266, -0.3368, sinf(workTime * 3.5) * 0.70)
             case "welder":
                 // torch points steeply down-forward: body visible on the fist
-                // (contrast against skin, not navy sleeve), nozzle on the seam
-                if var a = aim { a.x += 0.069; a.y += 0.090; a.z += 0.128; aim = a }
+                // (contrast against skin, not navy sleeve), nozzle on the
+                // seam. Small tip stir (6mm) + wrist tremor = live weld pool.
+                if var a = aim { a.x += 0.069 + 0.006 * sinf(workTime * 2.3); a.y += 0.090 + 0.006 * cosf(workTime * 1.9); a.z += 0.128; aim = a }
                 target = aim ?? SCNVector3(0.07, 0.04, -0.27)
                 targetRot = SCNVector3(-1.571, -0.849, -1.571)
                 targetToolRot = SCNVector3(Float.pi / 2, 0, 0)
-                wrist.eulerAngles = SCNVector3(sinf(workTime * 23) * 0.022, sinf(workTime * 19) * 0.018, 0)
+                wrist.rotation = SCNVector4(-0.2140, 0.8901, -0.4035, sinf(workTime * 7.0) * 0.18)
                 updateArc(on: true, t: workTime)
             case "diagnostics":
                 target = aim ?? SCNVector3(0.0, -0.07, -0.33)
                 targetRot = SCNVector3(0.10, -0.10, 0.0)
                 targetToolRot = toolRotIdle
-                wrist.eulerAngles = SCNVector3(sinf(workTime * 1.8) * 0.03, 0, 0)
+                wrist.eulerAngles = SCNVector3(sinf(workTime * 1.8) * 0.10, sinf(workTime * 1.1) * 0.06, 0)
                 screenMat?.emission.intensity = 0.7 + 0.4 * CGFloat(abs(sinf(workTime * 3)))
             default:
                 break
             }
+        }
+        if mode == .working, let g = handGrip?.geometry?.morpher {
+            // 0 = full grip; small relax pulse = visible finger squeeze
+            g.setWeight(max(0, 0.28 * (0.5 + 0.5 * sinf(workTime * 3.5))), forTargetAt: 0)
+        } else {
+            handGrip?.geometry?.morpher?.setWeight(0, forTargetAt: 0)
         }
         if mode != .working || workTool != "welder" { updateArc(on: false, t: 0) }
         if mode != .working || workTool != "diagnostics" { screenMat?.emission.intensity = 0.9 }
@@ -358,6 +377,10 @@ final class HandRig {
         let ntrz = toolRot.z + (targetToolRot.z - toolRot.z) * f
         toolRot = SCNVector3(ntrx, ntry_, ntrz)
         toolAnchor.eulerAngles = toolRot
+        // relax the work-motion pivot when not repairing
+        if mode != .working {
+            wrist.eulerAngles = SCNVector3(wrist.eulerAngles.x * (1 - f), wrist.eulerAngles.y * (1 - f), wrist.eulerAngles.z * (1 - f))
+        }
         //ADLOG logT += dt
         //ADLOG if logT >= 1 {
         //ADLOG     logT = 0

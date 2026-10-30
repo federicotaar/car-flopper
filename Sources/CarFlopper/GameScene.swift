@@ -64,6 +64,21 @@ final class GameSceneController: NSObject {
         }
     }
     func setHandWorking(_ on: Bool, tool: String?, atWorld: SCNVector3? = nil) { handRig?.setWorking(on, tool: tool, atWorld: atWorld) }
+
+    // Repair-hand aim: the PHYSICAL part surface point in world space, so
+    // the tool visibly works on the part itself; the marker ring hugs the
+    // same spot as a supporting label. Offsets are car-local (= world while
+    // the car sits at the garage origin, same convention as PartDef); the
+    // door pivot is its front hinge, so pull back onto the panel skin.
+    private let surfaceAimOffset: [String: SCNVector3] = [
+        "door": SCNVector3(-0.07, 0.0, -0.55),
+    ]
+    func partAimWorld(_ id: String) -> SCNVector3? {
+        guard let n = car?.partNodes[id] else { return nil }
+        let w = n.worldPosition
+        let o = surfaceAimOffset[id] ?? SCNVector3Zero
+        return SCNVector3(w.x + o.x, w.y + o.y, w.z + o.z)
+    }
     func updateHand(dt: Float, move: Float, yawVel: Float, pitchVel: Float) {
         handRig?.update(dt: dt, move: move, yawVel: yawVel, pitchVel: pitchVel)
     }

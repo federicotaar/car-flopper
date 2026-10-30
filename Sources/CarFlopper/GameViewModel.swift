@@ -177,7 +177,9 @@ final class GameViewModel: ObservableObject {
             }
             isRepairing = true
             repairingPartId = p.id
-            sceneCtrl.setHandWorking(true, tool: p.tool, atWorld: SCNVector3(p.x, p.y, p.z))
+            // aim at the part's marker ring (live world pos, hugs the part);
+            // raw PartDef coords are car-local, NOT world - only a fallback
+            sceneCtrl.setHandWorking(true, tool: p.tool, atWorld: sceneCtrl.partAimWorld(p.id) ?? SCNVector3(p.x, p.y, p.z))
             session.sendRepair(part: p.id, on: true)
         } else {
             isRepairing = false
