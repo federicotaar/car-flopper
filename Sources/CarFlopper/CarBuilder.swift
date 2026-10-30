@@ -15,15 +15,15 @@ final class CarAssembly {
         "wheelFR": SCNVector3(0.1208, 0, 0),
         "wheelRL": SCNVector3(-0.14305, 0, 0),
         "wheelRR": SCNVector3(0.14305, 0, 0),
-        "door": SCNVector3(-0.04610, 0, -0.550),
-        "exhaust": SCNVector3(0, -0.049497, -0.049497),
+        "door": SCNVector3(-0.05210, 0, -0.550),
+        "exhaust": SCNVector3(0.050912, 0, -0.050912),
         "engine": SCNVector3(0, 0.120, 0),
         "windshield": SCNVector3(-0.60, 0, 0.015),
     ]
     static let repairNormalLocal: [String: SCNVector3] = [
         "wheelFL": SCNVector3(-1,0,0), "wheelFR": SCNVector3(1,0,0),
         "wheelRL": SCNVector3(-1,0,0), "wheelRR": SCNVector3(1,0,0),
-        "door": SCNVector3(-1,0,0), "exhaust": SCNVector3(0,-0.7071,-0.7071),
+        "door": SCNVector3(-1,0,0), "exhaust": SCNVector3(0.7071,0,-0.7071),
         "engine": SCNVector3(0,1,0),
         "windshield": SCNVector3(0,0,1),
     ]
@@ -349,6 +349,15 @@ final class CarAssembly {
         door.name = "part_door"
         root.addChildNode(door)
         partNodes["door"] = door
+        let screw = SCNNode(geometry:SCNCylinder(radius:0.010,height:0.006))
+        screw.eulerAngles.z = .pi / 2
+        screw.position = SCNVector3(-0.04910,0,-0.550)
+        screw.geometry?.firstMaterial = Mat.steel
+        door.addChildNode(screw)
+        let slot = SCNNode(geometry:SCNBox(width:0.0008,height:0.002,length:0.012,chamferRadius:0))
+        slot.position = SCNVector3(-0.05235,0,-0.550)
+        slot.geometry?.firstMaterial = Mat.steelDark
+        door.addChildNode(slot)
 
         // exhaust (part)
         let ex = SCNNode(geometry: SCNCylinder(radius: 0.07, height: 0.5))
@@ -358,6 +367,9 @@ final class CarAssembly {
         ex.name = "part_exhaust"
         root.addChildNode(ex)
         partNodes["exhaust"] = ex
+        let seam = SCNNode(geometry:SCNTorus(ringRadius:0.070,pipeRadius:0.002))
+        seam.geometry?.firstMaterial = Mat.steelDark
+        ex.addChildNode(seam)
 
         // wheels (parts): real modeled tires + rims from the mesh pack,
         // baked centered so the repair squash and future removal work on

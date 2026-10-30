@@ -106,11 +106,15 @@ struct GameView: View {
                     var normal = vm.sceneCtrl.car?.repairNormalWorld(part.id) ?? SCNVector3(part.x,0,part.z)
                     if hypotf(normal.x,normal.z) < 0.01 { normal = SCNVector3(0,0,1) }
                     let len = max(0.001,hypotf(normal.x,normal.z))
-                    let px = hot.x + normal.x / len * 0.48
-                    let pz = hot.z + normal.z / len * 0.48
+                    var px = hot.x + normal.x / len * 0.48
+                    var pz = hot.z + normal.z / len * 0.48
+                    if abs(px) < 1.25 && abs(pz) < 2.35 {
+                        if 1.25-abs(px) < 2.35-abs(pz) { px = px < 0 ? -1.25 : 1.25 }
+                        else { pz = pz < 0 ? -2.35 : 2.35 }
+                    }
                     vm.sceneCtrl.localPosition = SCNVector3(px,0,pz)
                     let eye = part.id == "engine" ? Float(1.32) : max(0.60,min(1.32,hot.y+0.40))
-                    faceTarget(hot.x,hot.z,from:px,pz,pitch:-atan2f(eye-hot.y,0.48))
+                    faceTarget(hot.x,hot.z,from:px,pz,pitch:-atan2f(eye-hot.y,max(0.01,hypotf(px-hot.x,pz-hot.z))))
                     NSLog("[CFREPAIR] \(roundLabel): holding fix on \(part.id)")
                     vm.setRepairing(true)
                 }

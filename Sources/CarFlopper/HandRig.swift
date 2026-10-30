@@ -27,7 +27,7 @@ final class HandRig {
     private let tipLocal: [String: SCNVector3] = [
         "wrench": SCNVector3(0, 0.010, -0.172),
         "screwdriver": SCNVector3(0, 0.012, -0.160),
-        "welder": SCNVector3(0, 0.012, -0.1095),
+        "welder": SCNVector3(0, 0.012, -0.1495),
     ]
     private let toolAnchor = SCNNode()
 
@@ -205,10 +205,10 @@ final class HandRig {
             body.eulerAngles.x = .pi / 2
             body.position = SCNVector3(0, 0.012, 0.0)
             n.addChildNode(body)
-            let nozzle = SCNNode(geometry: SCNCylinder(radius: 0.007, height: 0.055))
+            let nozzle = SCNNode(geometry: SCNCylinder(radius: 0.007, height: 0.095))
             nozzle.geometry?.firstMaterial = Mat.flat(0.75, 0.45, 0.20, rough: 0.35, metal: 0.8)
             nozzle.eulerAngles.x = .pi / 2
-            nozzle.position = SCNVector3(0, 0.012, -0.082)
+            nozzle.position = SCNVector3(0, 0.012, -0.102)
             n.addChildNode(nozzle)
         case "diagnostics":
             // Rugged tablet carry handle. Its round crossbar shares the
@@ -550,7 +550,7 @@ final class HandRig {
                 l.attenuationStartDistance = 0.02
                 l.attenuationEndDistance = 0.9
                 an.light = l
-                an.position = SCNVector3(0, 0.016, -0.115)
+                an.position = tipLocal["welder"] ?? SCNVector3(0,0.012,-0.1495)
                 welder.addChildNode(an)
                 arcNode = an
                 arcLight = l
