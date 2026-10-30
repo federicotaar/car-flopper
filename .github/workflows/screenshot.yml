@@ -144,6 +144,8 @@ jobs:
         run: |
           echo '--- log stream CFAUTODRIVE ---'
           grep CFAUTODRIVE /tmp/cflog.txt | tail -80 || true
+          echo '--- log stream CFREPAIR ---'
+          grep CFREPAIR /tmp/cflog.txt | tail -80 || true
           echo '--- log stream all ---'
           tail -40 /tmp/cflog.txt || true
           echo '--- log show fallback ---'
@@ -157,5 +159,6 @@ jobs:
           path: |
             shots/*.png
             shots/*.mp4
+            /tmp/cflog.txt
 
 # re-registration touch after rename repair (no functional change)
