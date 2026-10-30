@@ -82,7 +82,7 @@ final class HandRig {
         let handGrip = HandMeshAsset.node("grip", material: skin)
         for h in [handRelax, handGrip, handSleeve] {
             h.eulerAngles.x = -.pi / 2
-            h.scale = SCNVector3(0.9, 0.9, 0.9)
+            h.scale = SCNVector3(1.0, 1.0, 1.0)
             h.position = SCNVector3(0, 0.0045, -0.006)
             wrist.addChildNode(h)
         }
@@ -90,7 +90,7 @@ final class HandRig {
         self.handRelax = handRelax
         self.handGrip = handGrip
 
-        toolAnchor.position = SCNVector3(-0.033, 0.038, -0.077) // inside the curled fist
+        toolAnchor.position = SCNVector3(-0.037, 0.042, -0.085) // inside the curled fist (v9 fit: validated against the camera-space replica)
         // tool presentation is per-state (see toolRot targets in update):
         // a forearm-axis tool is foreshortened to invisibility from the
         // first-person camera, so each state angles the shaft to read as a
@@ -117,12 +117,14 @@ final class HandRig {
             toolAnchor.addChildNode(n)
             toolNodes[t] = n
         }
-        // the pad rides the relax palm, not the grip anchor
+        // the pad is gripped by its lower-left edge in the fist, screen to
+        // camera (camera-space replica fit, variant f): it sits at the grip
+        // anchor offset rather than on a separate wrist mount
         if let d = toolNodes["diagnostics"] {
             d.removeFromParentNode()
             wrist.addChildNode(d)
-            d.position = SCNVector3(-0.036, -0.054, -0.144)
-            d.eulerAngles = SCNVector3(Float.pi / 2, 0, 0)
+            d.position = SCNVector3(-0.007, 0.087, -0.073)
+            d.eulerAngles = SCNVector3(0.15, 0, 0)
         }
     }
 
@@ -182,8 +184,7 @@ final class HandRig {
         case "diagnostics":
             let pad = SCNNode(geometry: SCNBox(width: 0.150, height: 0.105, length: 0.011, chamferRadius: 0.006))
             pad.geometry?.firstMaterial = Mat.flat(0.09, 0.09, 0.10, rough: 0.4)
-            pad.position = SCNVector3(0, 0.075, -0.055)
-            pad.eulerAngles.x = -0.5
+            pad.position = SCNVector3(0, 0, 0)
             n.addChildNode(pad)
             let sm = SCNMaterial()
             sm.diffuse.contents = UIColor(red: 0.05, green: 0.10, blue: 0.07, alpha: 1)
