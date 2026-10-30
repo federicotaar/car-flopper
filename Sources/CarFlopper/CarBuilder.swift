@@ -8,6 +8,7 @@ final class CarAssembly {
     let root = SCNNode()
     let def: CarDef
     private(set) var partNodes: [String: SCNNode] = [:]
+    private var wheelBaseY: [String: Float] = [:]
     private(set) var markers: [String: SCNNode] = [:]
 
     init(def: CarDef) {
@@ -262,11 +263,12 @@ final class CarAssembly {
         washerCap.position = SCNVector3(-0.55, 0.95, 1.82)
         bay.addChildNode(washerCap)
 
-        // hood prop rod leaning back to the open mesh hood underside
-        let prop = SCNNode(geometry: SCNCylinder(radius: 0.012, height: 1.05))
+        // hood prop rod: spans the radiator support up to the open mesh hood
+        // underside (leaning back, classic prop stance, actually touching both)
+        let prop = SCNNode(geometry: SCNCylinder(radius: 0.012, height: 1.29))
         (prop.geometry as? SCNCylinder)?.materials = [Mat.steel]
-        prop.position = SCNVector3(0.52, 1.22, 0.72)
-        prop.eulerAngles = SCNVector3(0.42, 0, 0.08)
+        prop.position = SCNVector3(0.45, 1.368, 1.27)
+        prop.eulerAngles = SCNVector3(-0.843, 0, 0)
         bay.addChildNode(prop)
 
         // MARK: interior (authored) lowered into the mesh cabin
@@ -338,6 +340,7 @@ final class CarAssembly {
             wheel.position = SCNVector3(x, y, z)
             root.addChildNode(wheel)
             partNodes[id] = wheel
+            wheelBaseY[id] = y
         }
 
         // spoiler for drift cars
@@ -410,8 +413,12 @@ final class CarAssembly {
             if !fixed { node.geometry?.materials = [Mat.rust] }
             else { node.geometry?.materials = [id == "engine" ? Mat.steelDark : Mat.steel] }
         } else if id.hasPrefix("wheel") {
-            // broken = flat: squash y; fixed = normal
+            // broken = flat: squash y anchored at the contact patch (the
+            // squash alone would lift the tire off the ground); fixed = normal
             node.scale = SCNVector3(1, fixed ? 1 : 0.55, 1)
+            if let baseY = wheelBaseY[id] {
+                node.position.y = fixed ? baseY : baseY * 0.55
+            }
         } else if id == "door" {
             if !fixed { node.geometry?.materials = [Mat.flat(def.bodyRGB.0 * 0.4, def.bodyRGB.1 * 0.4, def.bodyRGB.2 * 0.4, rough: 0.9)] ; node.eulerAngles.y = 0.18 }
             else { node.geometry?.materials = [Mat.flat(def.bodyRGB.0, def.bodyRGB.1, def.bodyRGB.2, rough: 0.25, metal: 0.85)]; node.eulerAngles.y = 0 }
