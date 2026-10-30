@@ -86,6 +86,15 @@ final class HandRig {
             h.position = SCNVector3(0, 0.0045, -0.006)
             wrist.addChildNode(h)
         }
+        // real finger flex: grip and relax share topology (8120 verts), so a
+        // morpher blends them - the fingers visibly squeeze while working.
+        // morpher is a property of the NODE (SCNNode.morpher), verified
+        // against Apple's SceneKit docs (var morpher: SCNMorpher?)
+        if let relaxGeo = handRelax.geometry {
+            let m = SCNMorpher()
+            m.targets = [relaxGeo]
+            handGrip.morpher = m
+        }
         handGrip.isHidden = true
         self.handRelax = handRelax
         self.handGrip = handGrip
@@ -341,6 +350,12 @@ final class HandRig {
             default:
                 break
             }
+        }
+        if mode == .working, let g = handGrip?.morpher {
+            // 0 = full grip; small relax pulse = visible finger squeeze
+            g.setWeight(CGFloat(max(0, 0.28 * (0.5 + 0.5 * sinf(workTime * 3.5)))), forTargetAt: 0)
+        } else {
+            handGrip?.morpher?.setWeight(0, forTargetAt: 0)
         }
         if mode != .working || workTool != "welder" { updateArc(on: false, t: 0) }
         if mode != .working || workTool != "diagnostics" { screenMat?.emission.intensity = 0.9 }
