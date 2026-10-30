@@ -304,25 +304,30 @@ final class HandRig {
             }
             switch workTool {
             case "wrench":
-                target = aim ?? SCNVector3(0.03, -0.05, -0.33)
-                targetRot = SCNVector3(-0.10, -0.18, 0.05)
-                targetToolRot = toolRotIdle
-                wrist.eulerAngles = SCNVector3(sinf(workTime * 6.5) * 0.42, 0, sinf(workTime * 6.5) * 0.10)
+                // sword grip: shaft along the fist bore, jaws land exactly on
+                // the hotspot (camera-space replica fit, ctor3): fixed
+                // palm-left pose, hand offset so the tool tip touches the aim
+                if var a = aim { a.x += 0.141; a.y += 0.018; a.z += 0.196; aim = a }
+                target = aim ?? SCNVector3(0.14, -0.03, -0.20)
+                targetRot = SCNVector3(-1.886, -0.253, -1.530)
+                targetToolRot = SCNVector3(Float.pi / 2, 0, 0)
+                wrist.eulerAngles = SCNVector3(sinf(workTime * 6.5) * 0.08, sinf(workTime * 6.5) * 0.42, 0)
             case "screwdriver":
-                // land the tilted TIP on the part, not the fist: with the
-                // -0.75 tilt the tip sits ~0.10 below and ~0.12 beyond the
-                // grip, so aim the grip above-and-closer than the hotspot
-                if var a = aim { a.y += 0.10; a.z += 0.12; aim = a }
-                target = aim ?? SCNVector3(0.02, -0.03, -0.31)
-                targetRot = SCNVector3(-0.08, -0.35, 0.0)
-                // shaft angled down-left so the tip meets the panel below
-                // the fist and the chrome shaft reads against the paint
-                targetToolRot = toolRotIdle
+                // sword grip: shaft along the fist bore, tip lands exactly on
+                // the hotspot (camera-space replica fit, ctor3A); the wrist
+                // twist below is about the shaft axis = turning the screw
+                if var a = aim { a.x += 0.132; a.y += 0.012; a.z += 0.173; aim = a }
+                target = aim ?? SCNVector3(0.13, -0.04, -0.22)
+                targetRot = SCNVector3(-1.886, -0.253, -1.530)
+                targetToolRot = SCNVector3(Float.pi / 2, 0, 0)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 11) * 0.06, sinf(workTime * 11) * 0.30, 0)
             case "welder":
-                target = aim ?? SCNVector3(0.02, -0.06, -0.40)
-                targetRot = SCNVector3(-0.05, -0.25, 0.0)
-                targetToolRot = toolRotIdle
+                // torch points steeply down-forward: body visible on the fist
+                // (contrast against skin, not navy sleeve), nozzle on the seam
+                if var a = aim { a.x += 0.069; a.y += 0.090; a.z += 0.128; aim = a }
+                target = aim ?? SCNVector3(0.07, 0.04, -0.27)
+                targetRot = SCNVector3(-1.571, -0.849, -1.571)
+                targetToolRot = SCNVector3(Float.pi / 2, 0, 0)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 23) * 0.022, sinf(workTime * 19) * 0.018, 0)
                 updateArc(on: true, t: workTime)
             case "diagnostics":
