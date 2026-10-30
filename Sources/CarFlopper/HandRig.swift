@@ -32,7 +32,8 @@ final class HandRig {
     private let reqLock = NSLock()
     private var pendingEquip: String?
     private var pendingEquipWorld: SCNVector3?
-    private var pendingWorking: (on: Bool, tool: String?)?
+    private var pendingWorking: (on: Bool, tool: String?, atWorld: SCNVector3?)?
+    private var workTargetWorld: SCNVector3?
 
     private enum Mode { case idle, equip, working }
     private var mode: Mode = .idle
@@ -123,18 +124,18 @@ final class HandRig {
         let n = SCNNode()
         switch id {
         case "wrench":
-            let shaft = SCNNode(geometry: SCNCylinder(radius: 0.0065, height: 0.150))
+            let shaft = SCNNode(geometry: SCNCylinder(radius: 0.0065, height: 0.170))
             shaft.geometry?.firstMaterial = HandRig.toolChrome
             shaft.eulerAngles.x = .pi / 2
-            shaft.position = SCNVector3(0, 0.01, -0.045)
+            shaft.position = SCNVector3(0, 0.01, -0.055)
             n.addChildNode(shaft)
             let head = SCNNode(geometry: SCNBox(width: 0.030, height: 0.011, length: 0.046, chamferRadius: 0.005))
             head.geometry?.firstMaterial = HandRig.toolChrome
-            head.position = SCNVector3(0, 0.01, -0.125)
+            head.position = SCNVector3(0, 0.01, -0.150)
             n.addChildNode(head)
             let jaw = SCNNode(geometry: SCNTorus(ringRadius: 0.016, pipeRadius: 0.006))
             jaw.geometry?.firstMaterial = HandRig.toolChrome
-            jaw.position = SCNVector3(0, 0.01, -0.146)
+            jaw.position = SCNVector3(0, 0.01, -0.172)
             n.addChildNode(jaw)
         case "screwdriver":
             let grip = SCNNode(geometry: SCNCapsule(capRadius: 0.011, height: 0.075))
@@ -142,15 +143,15 @@ final class HandRig {
             grip.eulerAngles.x = .pi / 2
             grip.position = SCNVector3(0, 0.012, 0.005)
             n.addChildNode(grip)
-            let shaft = SCNNode(geometry: SCNCylinder(radius: 0.0038, height: 0.095))
+            let shaft = SCNNode(geometry: SCNCylinder(radius: 0.0056, height: 0.115))
             shaft.geometry?.firstMaterial = HandRig.toolChrome
             shaft.eulerAngles.x = .pi / 2
-            shaft.position = SCNVector3(0, 0.012, -0.075)
+            shaft.position = SCNVector3(0, 0.012, -0.088)
             n.addChildNode(shaft)
-            let tip = SCNNode(geometry: SCNCone(topRadius: 0.001, bottomRadius: 0.0042, height: 0.014))
-            tip.geometry?.firstMaterial = HandRig.toolSteelDark
+            let tip = SCNNode(geometry: SCNCone(topRadius: 0.0015, bottomRadius: 0.0058, height: 0.016))
+            tip.geometry?.firstMaterial = HandRig.toolChrome
             tip.eulerAngles.x = -.pi / 2
-            tip.position = SCNVector3(0, 0.012, -0.128)
+            tip.position = SCNVector3(0, 0.012, -0.152)
             n.addChildNode(tip)
         case "welder":
             let body = SCNNode(geometry: SCNBox(width: 0.024, height: 0.030, length: 0.085, chamferRadius: 0.007))
@@ -188,8 +189,8 @@ final class HandRig {
     func requestEquip(_ tool: String, fromWorld: SCNVector3? = nil) {
         reqLock.lock(); pendingEquip = tool; pendingEquipWorld = fromWorld; reqLock.unlock()
     }
-    func setWorking(_ on: Bool, tool: String?) {
-        reqLock.lock(); pendingWorking = (on, tool); reqLock.unlock()
+    func setWorking(_ on: Bool, tool: String?, atWorld: SCNVector3? = nil) {
+        reqLock.lock(); pendingWorking = (on, tool, atWorld); reqLock.unlock()
     }
 
     // MARK: - per-frame update (render queue only)
@@ -224,9 +225,11 @@ final class HandRig {
                 if mode != .working { workTime = 0 }
                 mode = .working
                 workTool = t
+                workTargetWorld = w.atWorld
                 showTool(t)
             } else if mode == .working {
                 mode = .idle
+                workTargetWorld = nil
             }
         }
 
@@ -269,22 +272,34 @@ final class HandRig {
             if p >= 1 { mode = .idle }
         case .working:
             workTime += dt
+            // aim the hand at the actual part hotspot when the caller passed
+            // its world position, clamped to a natural reach envelope so the
+            // tool lands ON the part (wheel, door) instead of a fixed pose
+            var aim: SCNVector3? = nil
+            if let w = workTargetWorld, let cam = root.parent {
+                var t = cam.convertPosition(w, from: nil)
+                let L = sqrtf(t.x * t.x + t.y * t.y + t.z * t.z)
+                let maxR: Float = 0.40
+                if L > maxR { let sc = maxR / L; t = SCNVector3(t.x * sc, t.y * sc, t.z * sc) }
+                if t.z > -0.20 { t.z = -0.20 }
+                aim = t
+            }
             switch workTool {
             case "wrench":
-                target = SCNVector3(0.03, -0.05, -0.33)
+                target = aim ?? SCNVector3(0.03, -0.05, -0.33)
                 targetRot = SCNVector3(-0.10, -0.18, 0.05)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 6.5) * 0.42, 0, sinf(workTime * 6.5) * 0.10)
             case "screwdriver":
-                target = SCNVector3(0.02, -0.03, -0.31)
+                target = aim ?? SCNVector3(0.02, -0.03, -0.31)
                 targetRot = SCNVector3(-0.08, -0.35, 0.0)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 11) * 0.06, sinf(workTime * 11) * 0.30, 0)
             case "welder":
-                target = SCNVector3(0.02, -0.06, -0.40)
+                target = aim ?? SCNVector3(0.02, -0.06, -0.40)
                 targetRot = SCNVector3(-0.05, -0.25, 0.0)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 23) * 0.022, sinf(workTime * 19) * 0.018, 0)
                 updateArc(on: true, t: workTime)
             case "diagnostics":
-                target = SCNVector3(0.0, -0.07, -0.33)
+                target = aim ?? SCNVector3(0.0, -0.07, -0.33)
                 targetRot = SCNVector3(0.10, -0.10, 0.0)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 1.8) * 0.03, 0, 0)
                 screenMat?.emission.intensity = 0.7 + 0.4 * CGFloat(abs(sinf(workTime * 3)))
