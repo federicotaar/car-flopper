@@ -63,7 +63,7 @@ final class GameSceneController: NSObject {
             scene.rootNode.childNode(withName: "stationTool-\(st.tool)", recursively: true)?.isHidden = (st.tool == held)
         }
     }
-    func setHandWorking(_ on: Bool, tool: String?) { handRig?.setWorking(on, tool: tool) }
+    func setHandWorking(_ on: Bool, tool: String?, atWorld: SCNVector3? = nil) { handRig?.setWorking(on, tool: tool, atWorld: atWorld) }
     func updateHand(dt: Float, move: Float, yawVel: Float, pitchVel: Float) {
         handRig?.update(dt: dt, move: move, yawVel: yawVel, pitchVel: pitchVel)
     }
