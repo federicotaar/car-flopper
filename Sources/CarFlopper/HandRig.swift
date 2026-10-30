@@ -355,7 +355,7 @@ final class HandRig {
         }
         if mode == .working, let g = handGrip?.geometry?.morpher {
             // 0 = full grip; small relax pulse = visible finger squeeze
-            g.setWeight(max(0, 0.28 * (0.5 + 0.5 * sinf(workTime * 3.5))), forTargetAt: 0)
+            g.setWeight(CGFloat(max(0, 0.28 * (0.5 + 0.5 * sinf(workTime * 3.5)))), forTargetAt: 0)
         } else {
             handGrip?.geometry?.morpher?.setWeight(0, forTargetAt: 0)
         }
