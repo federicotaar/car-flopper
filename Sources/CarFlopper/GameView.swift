@@ -66,7 +66,9 @@ struct GameView: View {
                         NSLog("[CFREPAIR] damaged-door framing parked")
                         if let dn = vm.sceneCtrl.scene.rootNode.childNode(withName: "part_door", recursively: true) {
                             let (bmin, bmax) = dn.boundingBox
-                            NSLog("[CFDOOR] park-dump attached=%d hidden=%d euler=(%.3f,%.3f,%.3f) bbox=(%.3f,%.3f,%.3f)-(%.3f,%.3f,%.3f) mats=%d diffuse=%@", dn.scene != nil, dn.isHidden, dn.eulerAngles.x, dn.eulerAngles.y, dn.eulerAngles.z, bmin.x, bmin.y, bmin.z, bmax.x, bmax.y, bmax.z, dn.geometry?.materials.count ?? 0, String(describing: dn.geometry?.firstMaterial?.diffuse.contents))
+                            var dnTop: SCNNode = dn
+                            while let pp = dnTop.parent { dnTop = pp }
+                            NSLog("[CFDOOR] park-dump attached=%d hidden=%d euler=(%.3f,%.3f,%.3f) bbox=(%.3f,%.3f,%.3f)-(%.3f,%.3f,%.3f) mats=%d diffuse=%@", dnTop === vm.sceneCtrl.scene.rootNode, dn.isHidden, dn.eulerAngles.x, dn.eulerAngles.y, dn.eulerAngles.z, bmin.x, bmin.y, bmin.z, bmax.x, bmax.y, bmax.z, dn.geometry?.materials.count ?? 0, String(describing: dn.geometry?.firstMaterial?.diffuse.contents))
                         } else {
                             NSLog("[CFDOOR] park-dump: part_door node NOT FOUND in scene")
                         }

@@ -407,7 +407,7 @@ final class CarAssembly {
     // Visual state per part: broken (dark + marker) -> fixed (clean, marker removed)
     func setPart(_ id: String, progress: Float) {
         guard let node = partNodes[id] else { NSLog("[CFPART] setPart %@ progress=%.2f SKIP no node", id, progress); return }
-        NSLog("[CFPART] setPart %@ progress=%.2f attached=%d hidden=%d euler=(%.3f,%.3f,%.3f) diffuse=%@", id, progress, node.scene != nil, node.isHidden, node.eulerAngles.x, node.eulerAngles.y, node.eulerAngles.z, String(describing: node.geometry?.firstMaterial?.diffuse.contents))
+        NSLog("[CFPART] setPart %@ progress=%.2f attached=%d hidden=%d euler=(%.3f,%.3f,%.3f) diffuse=%@", id, progress, node.parent != nil, node.isHidden, node.eulerAngles.x, node.eulerAngles.y, node.eulerAngles.z, String(describing: node.geometry?.firstMaterial?.diffuse.contents))
         let fixed = progress >= 1
         markers[id]?.isHidden = fixed
         let brokenTint = UIColor(red: 0.25, green: 0.20, blue: 0.18, alpha: 1)
