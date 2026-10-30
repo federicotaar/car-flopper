@@ -303,6 +303,10 @@ final class HandRig {
                 targetToolRot = SCNVector3(-0.35, 0, 0)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 6.5) * 0.42, 0, sinf(workTime * 6.5) * 0.10)
             case "screwdriver":
+                // land the tilted TIP on the part, not the fist: with the
+                // -0.75 tilt the tip sits ~0.10 below and ~0.12 beyond the
+                // grip, so aim the grip above-and-closer than the hotspot
+                if var a = aim { a.y += 0.10; a.z += 0.12; aim = a }
                 target = aim ?? SCNVector3(0.02, -0.03, -0.31)
                 targetRot = SCNVector3(-0.08, -0.35, 0.0)
                 // shaft angled down-left so the tip meets the panel below
