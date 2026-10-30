@@ -50,6 +50,12 @@ final class HandRig {
     private let restPos = SCNVector3(0.150, -0.115, -0.360)
     private let restRot = SCNVector3(-0.28, -0.38, 0.10) // euler
 
+    // per-state tool presentation (smoothed in update like the pose):
+    // idle lifts the shaft up-forward so a held tool stays in frame at rest;
+    // work poses tip the working end down toward the part surface
+    private let toolRotIdle = SCNVector3(0.45, 0.30, 0)
+    private var toolRot = SCNVector3(0.45, 0.30, 0)
+
     init() {
         build()
     }
@@ -91,10 +97,11 @@ final class HandRig {
         self.handGrip = handGrip
 
         toolAnchor.position = SCNVector3(0, -0.0225, -0.126)
-        // tip-down tilt: a forearm-axis tool is foreshortened to invisibility
-        // from the first-person camera; a modest angle shows the shaft as a
-        // readable diagonal without clipping the curled fingers
-        toolAnchor.eulerAngles = SCNVector3(-0.35, 0, 0)
+        // tool presentation is per-state (see toolRot targets in update):
+        // a forearm-axis tool is foreshortened to invisibility from the
+        // first-person camera, so each state angles the shaft to read as a
+        // diagonal without clipping the curled fingers
+        toolAnchor.eulerAngles = toolRot
         wrist.addChildNode(toolAnchor)
 
         pose.position = restPos
@@ -257,6 +264,7 @@ final class HandRig {
         // mode behaviour
         var target = restPos
         var targetRot = restRot
+        var targetToolRot = toolRotIdle
         switch mode {
         case .idle:
             wrist.eulerAngles = SCNVector3(0, 0, 0)
@@ -292,19 +300,25 @@ final class HandRig {
             case "wrench":
                 target = aim ?? SCNVector3(0.03, -0.05, -0.33)
                 targetRot = SCNVector3(-0.10, -0.18, 0.05)
+                targetToolRot = SCNVector3(-0.35, 0, 0)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 6.5) * 0.42, 0, sinf(workTime * 6.5) * 0.10)
             case "screwdriver":
                 target = aim ?? SCNVector3(0.02, -0.03, -0.31)
                 targetRot = SCNVector3(-0.08, -0.35, 0.0)
+                // shaft angled down-left so the tip meets the panel below
+                // the fist and the chrome shaft reads against the paint
+                targetToolRot = SCNVector3(-0.75, 0.15, 0)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 11) * 0.06, sinf(workTime * 11) * 0.30, 0)
             case "welder":
                 target = aim ?? SCNVector3(0.02, -0.06, -0.40)
                 targetRot = SCNVector3(-0.05, -0.25, 0.0)
+                targetToolRot = SCNVector3(-0.45, 0, 0)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 23) * 0.022, sinf(workTime * 19) * 0.018, 0)
                 updateArc(on: true, t: workTime)
             case "diagnostics":
                 target = aim ?? SCNVector3(0.0, -0.07, -0.33)
                 targetRot = SCNVector3(0.10, -0.10, 0.0)
+                targetToolRot = SCNVector3(0, 0, 0)
                 wrist.eulerAngles = SCNVector3(sinf(workTime * 1.8) * 0.03, 0, 0)
                 screenMat?.emission.intensity = 0.7 + 0.4 * CGFloat(abs(sinf(workTime * 3)))
             default:
@@ -324,6 +338,11 @@ final class HandRig {
             pose.eulerAngles.x + (targetRot.x - pose.eulerAngles.x) * f,
             pose.eulerAngles.y + (targetRot.y - pose.eulerAngles.y) * f,
             pose.eulerAngles.z + (targetRot.z - pose.eulerAngles.z) * f)
+        toolRot = SCNVector3(
+            toolRot.x + (targetToolRot.x - toolRot.x) * f,
+            toolRot.y + (targetToolRot.y - toolRot.y) * f,
+            toolRot.z + (targetToolRot.z - toolRot.z) * f)
+        toolAnchor.eulerAngles = toolRot
         //ADLOG logT += dt
         //ADLOG if logT >= 1 {
         //ADLOG     logT = 0
