@@ -53,8 +53,8 @@ final class HandRig {
     // per-state tool presentation (smoothed in update like the pose):
     // idle lifts the shaft up-forward so a held tool stays in frame at rest;
     // work poses tip the working end down toward the part surface
-    private let toolRotIdle = SCNVector3(0, .pi / 2, 0) // base spin: tool -z shaft -> -x working end (thumb side)
-    private var toolRot = SCNVector3(0, .pi / 2, 0)
+    private let toolRotIdle = SCNVector3(0, Float.pi / 2, 0) // base spin: tool -z shaft -> -x working end (thumb side)
+    private var toolRot = SCNVector3(0, Float.pi / 2, 0)
 
     init() {
         build()
@@ -122,7 +122,7 @@ final class HandRig {
             d.removeFromParentNode()
             wrist.addChildNode(d)
             d.position = SCNVector3(-0.036, -0.054, -0.144)
-            d.eulerAngles = SCNVector3(.pi / 2, 0, 0)
+            d.eulerAngles = SCNVector3(Float.pi / 2, 0, 0)
         }
     }
 
@@ -347,10 +347,10 @@ final class HandRig {
             pose.eulerAngles.x + (targetRot.x - pose.eulerAngles.x) * f,
             pose.eulerAngles.y + (targetRot.y - pose.eulerAngles.y) * f,
             pose.eulerAngles.z + (targetRot.z - pose.eulerAngles.z) * f)
-        toolRot = SCNVector3(
-            toolRot.x + (targetToolRot.x - toolRot.x) * f,
-            toolRot.y + (targetToolRot.y - toolRot.y) * f,
-            toolRot.z + (targetToolRot.z - toolRot.z) * f)
+        let ntrx = toolRot.x + (targetToolRot.x - toolRot.x) * f
+        let ntry_ = toolRot.y + (targetToolRot.y - toolRot.y) * f
+        let ntrz = toolRot.z + (targetToolRot.z - toolRot.z) * f
+        toolRot = SCNVector3(ntrx, ntry_, ntrz)
         toolAnchor.eulerAngles = toolRot
         //ADLOG logT += dt
         //ADLOG if logT >= 1 {
