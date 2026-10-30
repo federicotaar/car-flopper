@@ -18,10 +18,11 @@ final class HandRig {
     private let sway = SCNNode()  // bob + look sway (position offsets)
     private let pose = SCNNode()  // mode-driven base transform
     private let wrist = SCNNode() // oscillation pivot for work motions
-    private let fingers = SCNNode()
     private let toolAnchor = SCNNode()
 
     private var toolNodes: [String: SCNNode] = [:]
+    private var handRelax: SCNNode?
+    private var handGrip: SCNNode?
     private var currentTool: String? = nil
     private var screenMat: SCNMaterial?
     private var arcLight: SCNLight?
@@ -58,7 +59,6 @@ final class HandRig {
         pose.addChildNode(wrist)
 
         let skin = Mat.flat(0.87, 0.63, 0.50, rough: 0.6)
-        let skinDark = Mat.flat(0.78, 0.54, 0.42, rough: 0.65)
         let sleeveMat = Mat.flat(0.16, 0.19, 0.26, rough: 0.95)
 
         // forearm receding to the lower-right edge of the frame
@@ -73,44 +73,23 @@ final class HandRig {
         sleeve.eulerAngles = SCNVector3(-1.05, 0.22, -0.30)
         wrist.addChildNode(sleeve)
 
-        // palm
-        let palmGeo = SCNBox(width: 0.082, height: 0.030, length: 0.095, chamferRadius: 0.013)
-        palmGeo.firstMaterial = skin
-        let palm = SCNNode(geometry: palmGeo)
-        wrist.addChildNode(palm)
-
-        // fingers: 4 two-segment capsules along the front edge, curled for a grip
-        fingers.position = SCNVector3(0, -0.002, -0.046)
-        wrist.addChildNode(fingers)
-        let fx: [Float] = [-0.030, -0.010, 0.010, 0.030]
-        for i in 0..<4 {
-            let base = SCNNode()
-            base.position = SCNVector3(fx[i], 0, 0)
-            base.eulerAngles.x = -0.55 // curl toward grip
-            let prox = SCNNode(geometry: SCNCapsule(capRadius: 0.0092, height: 0.030))
-            prox.geometry?.firstMaterial = skin
-            prox.eulerAngles.x = .pi / 2
-            prox.position = SCNVector3(0, 0, -0.012)
-            base.addChildNode(prox)
-            let tipNode = SCNNode()
-            tipNode.position = SCNVector3(0, -0.024, -0.010)
-            tipNode.eulerAngles.x = -0.85
-            let tip = SCNNode(geometry: SCNCapsule(capRadius: 0.0084, height: 0.026))
-            tip.geometry?.firstMaterial = skinDark
-            tip.eulerAngles.x = .pi / 2
-            tip.position = SCNVector3(0, 0, -0.010)
-            tipNode.addChildNode(tip)
-            base.addChildNode(tipNode)
-            fingers.addChildNode(base)
+        // mesh hand (CC0 human-hand, two baked poses) replaces the capsule
+        // palm/fingers/thumb. relax = open hand; grip = closed fist around
+        // the tool anchor. Mesh coords: fingers +y, palm -z, thumb -x;
+        // rotated so fingers point forward (-z), palm down (-y).
+        let handRelax = HandMeshAsset.node("relax", material: skin)
+        let handGrip = HandMeshAsset.node("grip", material: skin)
+        for h in [handRelax, handGrip] {
+            h.eulerAngles.x = -.pi / 2
+            h.scale = SCNVector3(0.9, 0.9, 0.9)
+            h.position = SCNVector3(0, 0.0045, 0.099)
+            wrist.addChildNode(h)
         }
-        // thumb opposing the grip
-        let thumb = SCNNode(geometry: SCNCapsule(capRadius: 0.0098, height: 0.036))
-        thumb.geometry?.firstMaterial = skin
-        thumb.position = SCNVector3(-0.046, -0.010, -0.018)
-        thumb.eulerAngles = SCNVector3(-0.5, 0.0, 0.9)
-        wrist.addChildNode(thumb)
+        handGrip.isHidden = true
+        self.handRelax = handRelax
+        self.handGrip = handGrip
 
-        toolAnchor.position = SCNVector3(0, -0.016, -0.055)
+        toolAnchor.position = SCNVector3(0, -0.0225, -0.126)
         wrist.addChildNode(toolAnchor)
 
         pose.position = restPos
@@ -343,6 +322,8 @@ final class HandRig {
         for (id, n) in toolNodes { n.isHidden = (id != tool) }
         currentTool = tool
         _equipTool = tool
+        handRelax?.isHidden = true
+        handGrip?.isHidden = false
     }
 
     // welder arc: small flickering light at the nozzle while welding
