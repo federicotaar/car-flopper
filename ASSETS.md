@@ -6,5 +6,11 @@
 - License: CC0 1.0 Universal (public domain) as stated on the model page; no attribution required, credited here anyway.
 - Modifications: hood faces split into a separate hinged node; wheels split per corner and centered on their hubs; pastel materials replaced by in-code PBR materials; quantized int16 packing with normals rebuilt at load.
 
+## Sources/CarFlopper/HandMeshAsset.swift — embedded first-person hand mesh
+- Source: "Human Hand" by grab3d.com — https://grab3d.com/models/anatomy/human-hand/
+- Direct file: https://grab3d.com/dl/human-hand/human-hand.glb (downloaded 2026-10-30, 886,372 bytes)
+- License: CC0 1.0 Universal (public domain) as stated on the model page; no attribution required, credited here anyway.
+- Modifications: mannequin stand ring removed; segmented pieces posed component-wise into two baked poses (relaxed, grip); quantized int16 packing with normals rebuilt at load.
+
 ## Downloaded for future unlock content (not yet shipped)
 - "Sedan" by grab3d.com — https://grab3d.com/models/vehicles/sedan/ — CC0 1.0.
