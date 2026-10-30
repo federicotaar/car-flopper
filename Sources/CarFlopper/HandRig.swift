@@ -91,6 +91,10 @@ final class HandRig {
         self.handGrip = handGrip
 
         toolAnchor.position = SCNVector3(0, -0.0225, -0.126)
+        // tip-down tilt: a forearm-axis tool is foreshortened to invisibility
+        // from the first-person camera; a modest angle shows the shaft as a
+        // readable diagonal without clipping the curled fingers
+        toolAnchor.eulerAngles = SCNVector3(-0.35, 0, 0)
         wrist.addChildNode(toolAnchor)
 
         pose.position = restPos
