@@ -34,6 +34,10 @@ final class HandRig {
     private var toolNodes: [String: SCNNode] = [:]
     private var handRelax: SCNNode?
     private var handGrip: SCNNode?
+    private var narrowGripGeometry: SCNGeometry?
+    private var narrowSqueezeGeometry: SCNGeometry?
+    private var roundGripGeometry: SCNGeometry?
+    private var roundSqueezeGeometry: SCNGeometry?
     private var currentTool: String? = nil
     private var screenMat: SCNMaterial?
     private var arcLight: SCNLight?
@@ -113,6 +117,10 @@ final class HandRig {
             m.targets = [relaxGeo]
             handGrip.morpher = m
         }
+        narrowGripGeometry = handGrip.geometry
+        narrowSqueezeGeometry = HandMeshAsset.node("squeeze", material: skin).geometry
+        roundGripGeometry = HandMeshAsset.node("roundGrip", material: skin).geometry
+        roundSqueezeGeometry = HandMeshAsset.node("roundSqueeze", material: skin).geometry
         handGrip.isHidden = true
         self.handRelax = handRelax
         self.handGrip = handGrip
@@ -184,7 +192,7 @@ final class HandRig {
                 n.addChildNode(prong)
             }
         case "screwdriver":
-            let grip = SCNNode(geometry: SCNCapsule(capRadius: 0.007, height: 0.075))
+            let grip = SCNNode(geometry: SCNCapsule(capRadius: 0.0125, height: 0.092))
             grip.geometry?.firstMaterial = Mat.flat(0.80, 0.18, 0.12, rough: 0.5)
             grip.eulerAngles.x = .pi / 2
             grip.position = SCNVector3(0, 0.012, 0.005)
@@ -200,7 +208,7 @@ final class HandRig {
             tip.position = SCNVector3(0, 0.012, -0.152)
             n.addChildNode(tip)
         case "welder":
-            let body = SCNNode(geometry: SCNCapsule(capRadius: 0.007, height: 0.085))
+            let body = SCNNode(geometry: SCNCapsule(capRadius: 0.0125, height: 0.092))
             body.geometry?.firstMaterial = Mat.flat(0.10, 0.10, 0.11, rough: 0.7)
             body.eulerAngles.x = .pi / 2
             body.position = SCNVector3(0, 0.012, 0.0)
@@ -437,7 +445,7 @@ final class HandRig {
                 z = simd_normalize(z); y = simd_normalize(simd_cross(z,x))
             }
             let frame = simd_quatf(simd_float3x3(columns:(x,y,z)))
-            let roll: Float = workTool == "wrench" ? 0 : (workTool == "welder" ? -0.5 : 0.0)
+            let roll: Float = 0
             let desired = frame * simd_quatf(angle:roll,axis:SIMD3<Float>(1,0,0))
             pose.simdOrientation = simd_slerp(pose.simdOrientation, desired, f)
         } else {
@@ -482,6 +490,14 @@ final class HandRig {
 
     private func showTool(_ tool: String) {
         for (id, n) in toolNodes { n.isHidden = (id != tool) }
+        let round = tool == "screwdriver" || tool == "welder"
+        if currentTool != tool, let h = handGrip {
+            h.geometry = round ? roundGripGeometry : narrowGripGeometry
+            let morph = SCNMorpher()
+            if let target = round ? roundSqueezeGeometry : narrowSqueezeGeometry { morph.targets = [target] }
+            h.morpher = morph
+        }
+        toolAnchor.position = round ? SCNVector3(-0.030, 0.01241956, -0.08849529) : SCNVector3(-0.030,0.018,-0.090)
         tipRef.position = tipLocal[tool] ?? SCNVector3Zero
         currentTool = tool
         _equipTool = tool
@@ -500,14 +516,14 @@ final class HandRig {
     }
     private func updateForearmExt() {
         let nr = 28, ns = 20
-        let end = SIMD3<Float>(0.38, -0.38, 0.02)
+        let end = SIMD3<Float>(0.37, -0.42, 0.05)
         let cuff = SCNVector3(-0.022, 0.048, -0.037)
         let c = wrist.convertPosition(cuff, to: root)
         let c0 = SIMD3<Float>(c.x,c.y,c.z)
         let vz = wrist.convertVector(SCNVector3(0,0,1), to: root)
         let tangent = simd_normalize(SIMD3<Float>(vz.x,vz.y,vz.z))
-        let c1 = c0 + tangent * 0.10
-        let c2 = end - SIMD3<Float>(0.22,-0.07,0.08)
+        let c1 = c0 + tangent * 0.075
+        let c2 = SIMD3<Float>(0.18,-0.31,-0.22)
         let vx = wrist.convertVector(SCNVector3(1,0,0), to: root)
         let vy = wrist.convertVector(SCNVector3(0,1,0), to: root)
         let ux = SIMD3<Float>(vx.x,vx.y,vx.z)
@@ -518,11 +534,16 @@ final class HandRig {
             let center = c0 * (a*a*a) + c1 * (3*a*a*t) + c2 * (3*a*t*t) + end * (t*t*t)
             let der = (c1-c0) * (3*a*a) + (c2-c1) * (6*a*t) + (end-c2) * (3*t*t)
             let q = simd_quatf(from: tangent, to: simd_normalize(der))
-            let scale: Float = 1 + 0.70*t
+            let keys: [Float] = [0,0.08,0.28,0.55,0.72,1]
+            let sizes: [Float] = [1,1.06,1.55,1.85,1.75,1.55]
+            let k = min(keys.count-2, (0..<(keys.count-1)).first { t <= keys[$0+1] } ?? keys.count-2)
+            let blend = (t-keys[k])/(keys[k+1]-keys[k])
+            let scale = sizes[k] + (sizes[k+1]-sizes[k])*blend
             for i in 0..<nr {
                 let ang = Float(i) * 2 * Float.pi / Float(nr)
                 let radial = q.act(ux * (0.035*cosf(ang)) + uy * (0.021*sinf(ang)))
-                let v = center + radial * scale
+                let fold = (0.06*sinf(t*38+ang*2) + 0.025*sinf(t*61-ang*3))*sinf(Float.pi*t)
+                let v = center + radial * (scale+fold)
                 let n = simd_normalize(radial)
                 vertices.append(SCNVector3(v.x,v.y,v.z)); normals.append(SCNVector3(n.x,n.y,n.z))
                 if j > 0 {
@@ -558,7 +579,17 @@ final class HandRig {
                 glow.emission.intensity = 2.5
                 pool.firstMaterial = glow
                 an.geometry = pool
-                an.position = tipLocal["welder"] ?? SCNVector3(0,0.012,-0.1495)
+                // The nozzle cap and work surface occlude a sphere at the exact
+                // contact. Place the visible pool just beside the cap, toward
+                // the open side of the seam; the physical nozzle tip stays put.
+                an.position = SCNVector3(0.008,0.016,-0.148)
+                for i in 0..<5 {
+                    let spark = SCNNode(geometry:SCNSphere(radius:0.0012))
+                    spark.geometry?.firstMaterial = glow
+                    let a = Float(i) * 2 * Float.pi / 5
+                    spark.position = SCNVector3(cosf(a)*0.010,sinf(a)*0.010,0.004)
+                    an.addChildNode(spark)
+                }
                 welder.addChildNode(an)
                 arcNode = an
                 arcLight = l

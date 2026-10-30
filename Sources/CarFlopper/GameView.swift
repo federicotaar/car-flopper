@@ -108,6 +108,9 @@ struct GameView: View {
                     let len = max(0.001,hypotf(normal.x,normal.z))
                     var px = hot.x + normal.x / len * 0.48
                     var pz = hot.z + normal.z / len * 0.48
+                    // Scripted reachable oblique working approach. This changes
+                    // only capture setup, never the production contact/reach path.
+                    if part.id == "door" { pz += 0.25 }
                     if abs(px) < 1.25 && abs(pz) < 2.35 {
                         if 1.25-abs(px) < 2.35-abs(pz) { px = px < 0 ? -1.25 : 1.25 }
                         else { pz = pz < 0 ? -2.35 : 2.35 }
