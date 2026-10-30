@@ -307,7 +307,7 @@ final class CarAssembly {
         // driver door repair skin: curved mesh baked from the shell surface
         // (1.5mm proud), hinged at its front edge so the broken read is a
         // real ajar door and the fixed read is flush matching paint
-        let door = SCNNode(geometry: CarBuilder.doorSkinGeometry())
+        let door = SCNNode(geometry: CarAssembly.doorSkinGeometry())
         door.geometry?.materials = [body]
         door.position = SCNVector3(-0.80, 0.62, 0.50) // hinge: front edge
         door.name = "part_door"
