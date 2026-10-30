@@ -66,6 +66,7 @@ final class HandRig {
         pose.addChildNode(wrist)
 
         let skin = Mat.flat(0.87, 0.63, 0.50, rough: 0.6)
+        skin.isDoubleSided = true
         let sleeveMat = Mat.flat(0.16, 0.19, 0.26, rough: 0.95)
 
         // the mesh hand now supplies a continuous anatomical forearm (bent
