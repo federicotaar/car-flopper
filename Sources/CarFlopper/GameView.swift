@@ -86,6 +86,7 @@ struct GameView: View {
                 }
             }
             var progressSeen = false
+            var finishedAll = false
             Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { t in
                 if !progressSeen, let id = targetPart, (vm.parts[id]?.progress ?? 0) > 0 {
                     progressSeen = true
@@ -113,14 +114,17 @@ struct GameView: View {
                             startRound(roundIndex)
                         } else {
                             NSLog("[CFREPAIR] all rounds OK")
+                            finishedAll = true
                         }
                     }
                     if doneAll { t.invalidate() }
                 }
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { startRound(0) }
+            // dead-man watchdog: only a FAIL if the rounds never completed;
+            // a successful run used to log a spurious FAIL here at t=115s
             DispatchQueue.main.asyncAfter(deadline: .now() + 115.0) {
-                NSLog("[CFREPAIR] TIMEOUT FAIL round=\(round) part=\(targetPart ?? "-")")
+                if !finishedAll { NSLog("[CFREPAIR] TIMEOUT FAIL round=\(round) part=\(targetPart ?? "-")") }
             }
             return
         }
