@@ -172,7 +172,7 @@ final class GameViewModel: ObservableObject {
                 return
             }
             isRepairing = true
-            sceneCtrl.setHandWorking(true, tool: p.tool)
+            sceneCtrl.setHandWorking(true, tool: p.tool, atWorld: SCNVector3(p.x, p.y, p.z))
             session.sendRepair(part: p.id, on: true)
         } else {
             isRepairing = false
