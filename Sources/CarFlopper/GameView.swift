@@ -7,6 +7,7 @@ import simd
 struct GameView: View {
     @ObservedObject var vm: GameViewModel
     var onLeave: () -> Void
+    @State private var sceneReady = false
 
     private func autoDriveGame() {
         #if AUTODRIVE
@@ -270,7 +271,7 @@ struct GameView: View {
 
     var body: some View {
         ZStack {
-            SceneViewBridge(controller: vm.sceneCtrl)
+            SceneViewBridge(controller: vm.sceneCtrl, onReady: { sceneReady = true })
                 .ignoresSafeArea()
                 .onAppear { autoDriveGame() }
 
@@ -312,6 +313,14 @@ struct GameView: View {
 
             if vm.phase == "complete" {
                 completionOverlay
+            }
+
+            if !sceneReady {
+                Color(red: 0.045, green: 0.055, blue: 0.075).ignoresSafeArea()
+                VStack(spacing: 16) {
+                    ProgressView().tint(.white)
+                    Text("Opening garage...").font(.headline).foregroundStyle(.white)
+                }
             }
 
             #if AUTODRIVE
@@ -459,8 +468,9 @@ struct GameView: View {
 
 struct SceneViewBridge: UIViewRepresentable {
     let controller: GameSceneController
+    let onReady: () -> Void
 
-    func makeCoordinator() -> Coordinator { Coordinator(controller: controller) }
+    func makeCoordinator() -> Coordinator { Coordinator(controller: controller, onReady: onReady) }
 
     func makeUIView(context: Context) -> SCNView {
         let v = SCNView()
@@ -478,7 +488,6 @@ struct SceneViewBridge: UIViewRepresentable {
         v.preferredFramesPerSecond = 60
 #endif
         v.delegate = context.coordinator
-        v.isPlaying = true
 
         let cam = SCNNode()
         cam.camera = SCNCamera()
@@ -499,6 +508,10 @@ struct SceneViewBridge: UIViewRepresentable {
         // draws a node's children when the node is part of the tree, and the
         // first-person hand rig hangs off this camera. A detached pointOfView
         // still renders the view itself, which hid this for two captures.
+        // A first frame must use the actual player camera, not an origin
+        // camera inside the car while the first dt is zero.
+        cam.position = SCNVector3(controller.localPosition.x, controller.cameraEyeHeight, controller.localPosition.z)
+        cam.eulerAngles.y = controller.cameraYaw
         controller.scene.rootNode.addChildNode(cam)
 #if AUTODRIVE
         NSLog("[CFAUTODRIVE][CFHAND] cam added to scene graph, hand rig attach requested")
@@ -512,6 +525,7 @@ struct SceneViewBridge: UIViewRepresentable {
         pan.maximumNumberOfTouches = 1
         pan.delegate = context.coordinator
         v.addGestureRecognizer(pan)
+        v.isPlaying = true
         return v
     }
 
@@ -521,11 +535,21 @@ struct SceneViewBridge: UIViewRepresentable {
         let controller: GameSceneController
         weak var camNode: SCNNode?
         private var lastTime: TimeInterval = 0
+        private var readyReported = false
+        private let onReady: () -> Void
         private var tickPending = false
         private let tickLock = NSLock()
 
-        init(controller: GameSceneController) {
+        init(controller: GameSceneController, onReady: @escaping () -> Void) {
             self.controller = controller
+            self.onReady = onReady
+        }
+
+        func renderer(_ renderer: SCNSceneRenderer, didRenderScene scene: SCNScene, atTime time: TimeInterval) {
+            guard !readyReported else { return }
+            readyReported = true
+            // Do not expose a live garage HUD before its first scene render.
+            DispatchQueue.main.async { [onReady] in onReady() }
         }
 
         // the look pan must live alongside the SwiftUI joystick drag: default

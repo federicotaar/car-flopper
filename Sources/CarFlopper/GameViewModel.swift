@@ -49,7 +49,12 @@ final class GameViewModel: ObservableObject {
     }
 
     var activePart: PartDef? {
-        sceneCtrl.nearestBrokenPart(parts: parts)?.0
+        // A held repair owns the HUD as well as the network/hand target.
+        // Never label a neighboring part while the old tool is still working.
+        if isRepairing, let id = repairingPartId {
+            return carDef.parts.first { $0.id == id }
+        }
+        return sceneCtrl.nearestBrokenPart(parts: parts)?.0
     }
     var withinWorkingRange: Bool {
         guard let p = activePart else { return false }
@@ -159,7 +164,14 @@ final class GameViewModel: ObservableObject {
         // the hold belongs to the part it started on: when that part
         // completes (or the nearest-broken flips to a neighbor), stop.
         // Fixing the next part takes a fresh press.
-        if isRepairing, activePart?.id != repairingPartId || !withinWorkingRange { setRepairing(false) }
+        if isRepairing, let id = repairingPartId {
+            let completed = (parts[id]?.progress ?? 0) >= 1
+            let targetChanged = sceneCtrl.nearestBrokenPart(parts: parts)?.0.id != id
+            let requiredTool = carDef.parts.first { $0.id == id }?.tool
+            if completed || targetChanged || !sceneCtrl.inWorkingRange(id) || heldTool != requiredTool {
+                setRepairing(false)
+            }
+        }
         if isRepairing, !repairSent, let id = repairingPartId {
             if abs(sceneCtrl.cameraEyeHeight-sceneCtrl.workingEyeHeight) < 0.025 {
                 if stanceReadySince == nil { stanceReadySince = now }
@@ -220,6 +232,14 @@ final class GameViewModel: ObservableObject {
 extension GameViewModel: GameSessionDelegate {
     nonisolated func session(_ s: GameSession, didReceive snapshot: RoomSnapshot) {
         Task { @MainActor in
+            // Stop a completed/removed target before publishing its new state.
+            // This makes the HUD, hand and held-repair state one transition,
+            // rather than waiting for a later render-driven game tick.
+            if self.isRepairing, let id = self.repairingPartId,
+               snapshot.carIndex != self.carIndex || snapshot.phase != "play" ||
+               (snapshot.parts[id]?.progress ?? 1) >= 1 {
+                self.setRepairing(false)
+            }
             self.roomCode = snapshot.code
             self.phase = snapshot.phase
             self.players = snapshot.players
