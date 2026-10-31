@@ -585,11 +585,13 @@ final class HandRig {
         // this uneven spacing. The two throat points inside the hand keep the
         // cuff ring's tangent parallel to wz (ring plane = wrist cut plane);
         // the palm-interior offset follows the skin cross-section centroid,
-        // which sits ~4 mm toward -x/-y from the cut centroid.
+        // which sits ~4 mm toward -x/-y from the cut centroid; it is held
+        // at both throat points so the cone stays centered in the flesh
+        // until the flare begins (keeps the tube inside the palm skin).
         let th0 = c0 - wz * 0.038 - u * 0.004 - v * 0.004
-        let th1 = c0 - wz * 0.022 - u * 0.002 - v * 0.002
-        let hug = c0 + wz * 0.030
-        let blend = c0 + wz * 0.020 + fd * 0.040
+        let th1 = c0 - wz * 0.022 - u * 0.004 - v * 0.004
+        let hug = c0 + wz * 0.012
+        let blend = c0 + wz * 0.006 + fd * 0.030
         let fa = blend + (el - blend) * 0.5
         let ua = el + (sh - el) * 0.35
         let mid2 = sh + (end - sh) * 0.5
@@ -600,7 +602,7 @@ final class HandRig {
         // cross-sections) flaring to the cuff rim at s = 0. The rim at 1.14x
         // wraps the measured wrist-cut ring with >= 3.9 mm margin.
         let radiusKeys: [(Float, Float)] = [
-            (-0.038, 0.32), (-0.022, 0.36), (-0.010, 0.44), (-0.004, 0.58),
+            (-0.038, 0.32), (-0.022, 0.36), (-0.010, 0.42), (-0.004, 0.46),
             (0, 1.14), (0.010, 1.12), (0.04, 1.16), (0.14, 1.22),
             (0.27, 1.24), (0.34, 1.20), (0.45, 1.28), (0.55, 1.40), (1.2, 1.60)
         ]
@@ -610,7 +612,7 @@ final class HandRig {
 
         // Parallel-transported ring frames seeded from the wrist axes so the
         // elliptical section stays oriented to the hand at the cuff.
-        let sides = 16
+        let sides = 24
         var vertices = [SCNVector3](), normals = [SCNVector3](), indices = [Int32]()
         var bx = u - samples[0].tan * simd_dot(u, samples[0].tan)
         if simd_length(bx) < 0.0001 { bx = simd_cross(samples[0].tan, SIMD3<Float>(0, 1, 0)) }
