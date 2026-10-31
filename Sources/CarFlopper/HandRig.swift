@@ -515,34 +515,54 @@ final class HandRig {
         wrist.rotation = SCNVector4(v.x,v.y,v.z,angle)
     }
     private func updateForearmExt() {
-        let nr = 28, ns = 20
-        let end = SIMD3<Float>(0.37, -0.42, 0.05)
+        let nr = 28, ns = 40
         let cuff = SCNVector3(-0.022, 0.048, -0.037)
         let c = wrist.convertPosition(cuff, to: root)
         let c0 = SIMD3<Float>(c.x,c.y,c.z)
         let vz = wrist.convertVector(SCNVector3(0,0,1), to: root)
         let tangent = simd_normalize(SIMD3<Float>(vz.x,vz.y,vz.z))
-        let c1 = c0 + tangent * 0.075
-        let c2 = SIMD3<Float>(0.18,-0.31,-0.22)
+        // Solve an elbow from upper-arm/forearm lengths and a body-side
+        // shoulder, then connect both segments. Never terminate a tube in view.
+        let shoulder = SIMD3<Float>(0.20,-0.20,0.14)
+        let delta = shoulder-c0
+        let distance = max(0.031,min(0.565,simd_length(delta)))
+        let axis = simd_normalize(delta)
+        let along = (0.27*0.27-0.30*0.30+distance*distance)/(2*distance)
+        let height = sqrtf(max(0.0001,0.27*0.27-along*along))
+        var bend = SIMD3<Float>(0.8,-1,0.1)
+        bend -= axis * simd_dot(bend,axis)
+        bend = simd_normalize(bend)
+        let elbow = c0+axis*along+bend*height
+        let c1 = c0+tangent*0.055
+        let c2 = elbow-(elbow-c0)*0.18
         let vx = wrist.convertVector(SCNVector3(1,0,0), to: root)
         let vy = wrist.convertVector(SCNVector3(0,1,0), to: root)
         let ux = SIMD3<Float>(vx.x,vx.y,vx.z)
         let uy = SIMD3<Float>(vy.x,vy.y,vy.z)
         var vertices = [SCNVector3](), normals = [SCNVector3](), indices = [Int32]()
         for j in 0...ns {
-            let t = Float(j) / Float(ns), a = 1 - t
-            let center = c0 * (a*a*a) + c1 * (3*a*a*t) + c2 * (3*a*t*t) + end * (t*t*t)
-            let der = (c1-c0) * (3*a*a) + (c2-c1) * (6*a*t) + (end-c2) * (3*t*t)
+            let t = Float(j) / Float(ns)
+            let center: SIMD3<Float>, der: SIMD3<Float>
+            if t <= 0.62 {
+                let u = t/0.62, b = 1-u
+                center = c0*(b*b*b)+c1*(3*b*b*u)+c2*(3*b*u*u)+elbow*(u*u*u)
+                der = (c1-c0)*(3*b*b)+(c2-c1)*(6*b*u)+(elbow-c2)*(3*u*u)
+            } else {
+                let u = (t-0.62)/0.38, b = 1-u
+                let ua = elbow+(elbow-c2)*0.5, ub = shoulder+(elbow-shoulder)*0.20
+                center = elbow*(b*b*b)+ua*(3*b*b*u)+ub*(3*b*u*u)+shoulder*(u*u*u)
+                der = (ua-elbow)*(3*b*b)+(ub-ua)*(6*b*u)+(shoulder-ub)*(3*u*u)
+            }
             let q = simd_quatf(from: tangent, to: simd_normalize(der))
-            let keys: [Float] = [0,0.08,0.28,0.55,0.72,1]
-            let sizes: [Float] = [1,1.06,1.55,1.85,1.75,1.55]
+            let keys: [Float] = [0,0.08,0.25,0.5,0.62,0.75,1]
+            let sizes: [Float] = [1,1.02,1.18,1.32,1.25,1.50,1.8]
             let k = min(keys.count-2, (0..<(keys.count-1)).first { t <= keys[$0+1] } ?? keys.count-2)
             let blend = (t-keys[k])/(keys[k+1]-keys[k])
             let scale = sizes[k] + (sizes[k+1]-sizes[k])*blend
             for i in 0..<nr {
                 let ang = Float(i) * 2 * Float.pi / Float(nr)
                 let radial = q.act(ux * (0.035*cosf(ang)) + uy * (0.021*sinf(ang)))
-                let fold = (0.06*sinf(t*38+ang*2) + 0.025*sinf(t*61-ang*3))*sinf(Float.pi*t)
+                let fold = (0.035*sinf(t*35+ang*2) + 0.02*sinf(t*61-ang*3))*sinf(Float.pi*t)
                 let v = center + radial * (scale+fold)
                 let n = simd_normalize(radial)
                 vertices.append(SCNVector3(v.x,v.y,v.z)); normals.append(SCNVector3(n.x,n.y,n.z))
@@ -562,7 +582,7 @@ final class HandRig {
     // welder arc: small flickering light at the nozzle while welding
     private func updateArc(on: Bool, t: Float) {
         if on {
-            if arcNode == nil, let welder = toolNodes["welder"] {
+            if arcNode == nil {
                 let an = SCNNode()
                 let l = SCNLight()
                 l.type = .omni
@@ -570,7 +590,7 @@ final class HandRig {
                 l.attenuationStartDistance = 0.02
                 l.attenuationEndDistance = 0.9
                 an.light = l
-                let pool = SCNSphere(radius:0.0045)
+                let pool = SCNSphere(radius:0.008)
                 pool.segmentCount = 12
                 let glow = SCNMaterial()
                 glow.lightingModel = .constant
@@ -579,10 +599,9 @@ final class HandRig {
                 glow.emission.intensity = 2.5
                 pool.firstMaterial = glow
                 an.geometry = pool
-                // The nozzle cap and work surface occlude a sphere at the exact
-                // contact. Place the visible pool just beside the cap, toward
-                // the open side of the seam; the physical nozzle tip stays put.
-                an.position = SCNVector3(0.008,0.016,-0.148)
+                // Pool follows the physical surface, offset outward along its
+                // current world normal. It is not attached behind the nozzle cap.
+                an.position = SCNVector3Zero
                 for i in 0..<5 {
                     let spark = SCNNode(geometry:SCNSphere(radius:0.0012))
                     spark.geometry?.firstMaterial = glow
@@ -590,9 +609,17 @@ final class HandRig {
                     spark.position = SCNVector3(cosf(a)*0.010,sinf(a)*0.010,0.004)
                     an.addChildNode(spark)
                 }
-                welder.addChildNode(an)
+                root.addChildNode(an)
                 arcNode = an
                 arcLight = l
+            }
+            if let point = workTargetWorld, let normal = workNormalWorld {
+                let n = simd_normalize(SIMD3<Float>(normal.x,normal.y,normal.z))
+                let exposed = SCNVector3(point.x+n.x*0.008,point.y+n.y*0.008,point.z+n.z*0.008)
+                arcNode?.position = root.convertPosition(exposed, from:nil)
+                let localNormal = root.convertVector(normal, from:nil)
+                let axis = simd_normalize(SIMD3<Float>(localNormal.x,localNormal.y,localNormal.z))
+                arcNode?.simdOrientation = simd_quatf(from:SIMD3<Float>(0,0,1),to:axis)
             }
             arcNode?.isHidden = false
             let pulse = 0.8 + 0.25 * abs(sinf(t * 31))

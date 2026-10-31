@@ -67,7 +67,11 @@ final class GameSceneController: NSObject {
     }
     private var handWorkPartId: String?
     func setHandWorking(_ on: Bool, tool: String?, partId: String? = nil, atWorld: SCNVector3? = nil) {
+        if let previous = handWorkPartId { car?.markers[previous]?.opacity = 1 }
         handWorkPartId = on ? partId : nil
+        // Labels remain in the HUD; remove the 3D ring only while hands work
+        // so it cannot be mistaken for the welding arc or hide tool contact.
+        if on, let id = partId { car?.markers[id]?.opacity = 0 }
         if on, let id = partId, id != "engine", let point = partAimWorld(id) {
             workingEyeHeight = max(0.60, min(1.32, point.y + 0.40))
         } else { workingEyeHeight = 1.32 }
