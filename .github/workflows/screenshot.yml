@@ -14,6 +14,11 @@ on:
         type: choice
         options: [showcase, repair]
         default: showcase
+      stress_cuff:
+        description: 'Add the artificial +/-35deg wrist sweep (stress only, not gameplay)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -86,7 +91,8 @@ jobs:
           xcrun simctl spawn cf-shot defaults write federicotaranu.carflopper carflopper.nick -string SIMHOST || true
           ARGS="-CFAutoDrive"
           if [ "${{ inputs.autodrive_debug }}" = "true" ]; then ARGS="$ARGS -CFAutoDriveDebug"; fi
-          if [ "${{ inputs.mode }}" = "repair" ]; then ARGS="$ARGS -CFAutoDriveRepair -CFStressCuff"; fi
+          if [ "${{ inputs.mode }}" = "repair" ]; then ARGS="$ARGS -CFAutoDriveRepair"; fi
+          if [ "${{ inputs.stress_cuff }}" = "true" ]; then ARGS="$ARGS -CFStressCuff"; fi
           xcrun simctl launch cf-shot federicotaranu.carflopper $ARGS || true
           mkdir -p shots
           sleep 4
