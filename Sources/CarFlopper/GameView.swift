@@ -536,6 +536,11 @@ struct SceneViewBridge: UIViewRepresentable {
         weak var camNode: SCNNode?
         private var lastTime: TimeInterval = 0
         private var readyReported = false
+        private var preparingScene = false
+        private var preparationAttempted = false
+        private var preparedScene = false
+        private var readinessCheckPending = false
+        private var visibleFrameCount = 0
         private let onReady: () -> Void
         private var tickPending = false
         private let tickLock = NSLock()
@@ -546,10 +551,61 @@ struct SceneViewBridge: UIViewRepresentable {
         }
 
         func renderer(_ renderer: SCNSceneRenderer, didRenderScene scene: SCNScene, atTime time: TimeInterval) {
-            guard !readyReported else { return }
-            readyReported = true
-            // Do not expose a live garage HUD before its first scene render.
-            DispatchQueue.main.async { [onReady] in onReady() }
+            guard controller.car != nil, let view = renderer as? SCNView else { return }
+            tickLock.lock()
+            guard !readyReported, !readinessCheckPending else { tickLock.unlock(); return }
+            if !preparedScene {
+                guard !preparingScene, !preparationAttempted else { tickLock.unlock(); return }
+                preparingScene = true
+                preparationAttempted = true
+                tickLock.unlock()
+                view.prepare([scene]) { [weak self] success in
+                    // Return state to the same render callback through a lock.
+                    guard let self else { return }
+                    self.tickLock.lock()
+                    self.preparedScene = success
+                    self.preparingScene = false
+                    self.tickLock.unlock()
+                }
+                return
+            }
+            readinessCheckPending = true
+            tickLock.unlock()
+            DispatchQueue.main.async { [weak self, weak view] in
+                guard let self, let view else { return }
+                let visible = Self.hasSceneContent(view.snapshot())
+                self.tickLock.lock()
+                self.visibleFrameCount = visible ? self.visibleFrameCount + 1 : 0
+                let ready = self.visibleFrameCount >= 2
+                self.readyReported = ready
+                self.readinessCheckPending = false
+                self.tickLock.unlock()
+                if ready { self.onReady() }
+            }
+        }
+
+        // A render callback alone can precede the first drawable on a cold GPU.
+        // Inspect a tiny scene-only snapshot, excluding SwiftUI HUD/loading UI.
+        private static func hasSceneContent(_ image: UIImage) -> Bool {
+            guard let cg = image.cgImage else { return false }
+            let size = 24
+            var pixels = [UInt8](repeating: 0, count: size * size * 4)
+            let drew = pixels.withUnsafeMutableBytes { bytes -> Bool in
+                guard let context = CGContext(data: bytes.baseAddress, width: size, height: size,
+                    bitsPerComponent: 8, bytesPerRow: size * 4,
+                    space: CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+                context.draw(cg, in: CGRect(x: 0, y: 0, width: size, height: size))
+                return true
+            }
+            guard drew else { return false }
+            var lit = 0, low = 255, high = 0
+            for i in stride(from: 0, to: pixels.count, by: 4) {
+                let value = max(Int(pixels[i]), Int(pixels[i+1]), Int(pixels[i+2]))
+                if value > 20 { lit += 1 }
+                low = min(low, value); high = max(high, value)
+            }
+            return lit > size * size / 8 && high - low > 24
         }
 
         // the look pan must live alongside the SwiftUI joystick drag: default
