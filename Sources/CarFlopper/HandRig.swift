@@ -166,6 +166,23 @@ final class HandRig {
             d.position = SCNVector3(-0.030, 0.030, -0.1825)
             d.eulerAngles = SCNVector3(Float.pi / 2, 0, 0)
         }
+
+        // Runs 109/110: the world key light's shadow map (512 px in the
+        // simulator) lays a hard stair-stepped car shadow across the forearm.
+        // The hand nodes use category 2; the world key excludes it, and an
+        // unshadowed clone of the key lights the hand instead.
+        root.enumerateHierarchy { node, _ in node.categoryBitMask = 2 }
+        let handKey = SCNLight()
+        handKey.type = .directional
+        handKey.color = UIColor(red: 0.98, green: 0.97, blue: 0.94, alpha: 1)
+        handKey.intensity = 850
+        handKey.castsShadow = false
+        handKey.categoryBitMask = 2
+        let handKeyNode = SCNNode()
+        handKeyNode.light = handKey
+        handKeyNode.categoryBitMask = 2
+        handKeyNode.eulerAngles = SCNVector3(-1.25, 0, 0)
+        root.addChildNode(handKeyNode)
     }
 
     // hand-local tool materials: PBR + env + bloom blew the shared chrome out
