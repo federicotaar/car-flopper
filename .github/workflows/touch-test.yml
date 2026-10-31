@@ -1,0 +1,159 @@
+name: Touch harness (sim, idb HID)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: touch-test
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install xtool
+        run: |
+          set -e
+          for i in 1 2 3; do
+            curl -fSL --retry 3 -o /tmp/xtool.app.zip https://github.com/xtool-org/xtool/releases/download/1.17.0/xtool.app.zip && break
+            sleep 5
+          done
+          ditto -x -k /tmp/xtool.app.zip /tmp/xtool
+          echo "/tmp/xtool/xtool.app/Contents/Resources/bin" >> "$GITHUB_PATH"
+
+      - name: Generate app icon
+        run: |
+          set -e
+          mkdir -p Resources
+          base64 -D -i assets/icon.b64 -o Resources/icon1024.png
+          sips -z 120 120 Resources/icon1024.png --out "Resources/AppIcon60x60@2x.png"
+          sips -z 180 180 Resources/icon1024.png --out "Resources/AppIcon60x60@3x.png"
+
+      - name: Boot an iPhone simulator
+        run: |
+          set -e
+          RUNTIME=$(xcrun simctl list runtimes -j | jq -r '[.runtimes[] | select(.platform=="iOS" and .isAvailable)] | last | .identifier')
+          DEV=$(xcrun simctl list devicetypes -j | jq -r '[.devicetypes[] | select(.name | test("iPhone 1[5-9]|iPhone [2-9]"))] | first | .identifier')
+          xcrun simctl create cf-touch "$DEV" "$RUNTIME"
+          xcrun simctl boot cf-touch
+          xcrun simctl bootstatus cf-touch -b
+
+      - name: Enable autodrive hooks for the sim build only
+        run: |
+          sed -i '' 's/#if AUTODRIVE/#if true/' Sources/CarFlopper/MenuViews.swift Sources/CarFlopper/GameView.swift
+          grep -c '#if true' Sources/CarFlopper/MenuViews.swift Sources/CarFlopper/GameView.swift
+
+      - name: Build for simulator
+        run: |
+          set -e
+          xtool dev build --triple arm64-apple-ios-simulator -c release
+          find . -name "*.app" -maxdepth 4
+
+      - name: Install idb (free, open source HID injector)
+        run: |
+          set +e
+          brew tap facebook/fb 2>&1 | tail -2
+          brew install idb-companion 2>&1 | tail -8
+          python3 -m venv /tmp/idbvenv
+          /tmp/idbvenv/bin/pip install fb-idb 2>&1 | tail -3
+          which idb_companion; ls /tmp/idbvenv/bin | head -20
+          /tmp/idbvenv/bin/idb --help 2>&1 | head -5
+          exit 0
+
+      - name: Install and launch in touch-test mode
+        run: |
+          set -e
+          APP=$(find . -name "*.app" -maxdepth 4 | head -n1)
+          xcrun simctl install cf-touch "$APP"
+          xcrun simctl spawn cf-touch defaults write federicotaranu.carflopper carflopper.nick -string SIMTOUCH || true
+          xcrun simctl launch cf-touch federicotaranu.carflopper -CFTouchTest || true
+
+      - name: Wait for the garage and drive real HID touches
+        run: |
+          set +e
+          export PATH=/tmp/idbvenv/bin:$PATH
+          UDID=$(xcrun simctl list devices -j | jq -r '.devices[][] | select(.name=="cf-touch") | .udid')
+          echo "udid $UDID"
+          for i in $(seq 1 60); do
+            xcrun simctl spawn cf-touch log show --last 2m --predicate 'processImagePath CONTAINS "CarFlopper"' --style compact > /tmp/probe.log 2>/dev/null
+            grep -q 'CFTOUCH. probe armed' /tmp/probe.log && break
+            sleep 3
+          done
+          grep -c 'CFTOUCH. state' /tmp/probe.log
+          sleep 5
+          mkdir -p out
+          xcrun simctl io cf-touch screenshot out/00-before.png
+          idb ui describe-all --udid "$UDID" > out/ax.json 2> out/ax.err
+          head -c 1500 out/ax.json; echo; cat out/ax.err | head -5
+          python3 - <<'PY'
+          import json,subprocess,re,time,os
+          env=os.environ
+          UDID=subprocess.check_output("xcrun simctl list devices -j | jq -r '.devices[][] | select(.name==\"cf-touch\") | .udid'",shell=True,text=True).strip()
+          def sh(c): return subprocess.run(c,shell=True,capture_output=True,text=True)
+          def log():
+              r=sh("xcrun simctl spawn cf-touch log show --last 40s --predicate 'processImagePath CONTAINS \"CarFlopper\"' --style compact")
+              return r.stdout
+          def state():
+              ls=[l for l in log().splitlines() if 'CFTOUCH] state' in l]
+              if not ls: return None
+              m=re.search(r'pos=\(([-\d.]+),([-\d.]+)\) yaw=([-\d.]+)',ls[-1]); 
+              return tuple(float(x) for x in m.groups()) if m else None
+          def snap(n): sh(f"xcrun simctl io cf-touch screenshot out/{n}.png")
+          def ax():
+              try: return json.load(open('out/ax.json'))
+              except Exception as e: return []
+          def find(label):
+              def walk(x):
+                  if isinstance(x,list):
+                      for i in x: yield from walk(i)
+                  elif isinstance(x,dict):
+                      if x.get('AXLabel')==label or x.get('AXUniqueId')==label: yield x
+                      for v in x.values(): yield from walk(v)
+              for e in walk(ax()): return e.get('frame')
+          J=find('cf-joystick'); R=find('cf-repair')
+          print('AX joystick',J,'repair',R)
+          W,H=402,874
+          maps={'M0':lambda x,y:(x,y),'M1':lambda x,y:(W-y,x),'M2':lambda x,y:(y,H-x)}
+          # landscape fallbacks (874x402)
+          jc=(153,241); rc=(739,301)
+          if J: jc=(J['x']+J['width']/2,J['y']+J['height']/2)
+          if R: rc=(R['x']+R['width']/2,R['y']+R['height']/2)
+          print('centers',jc,rc)
+          good=None
+          for name,f in maps.items():
+              s0=state(); x0,y0=f(*jc); x1,y1=f(jc[0]+40,jc[1])
+              r=sh(f"idb ui swipe {x0:.0f} {y0:.0f} {x1:.0f} {y1:.0f} --duration 2 --udid {UDID}")
+              print(name,'swipe',r.returncode,r.stderr[:120]); time.sleep(1)
+              s1=state(); print(name,'state',s0,'->',s1)
+              if s0 and s1 and (abs(s0[0]-s1[0])+abs(s0[1]-s1[1]))>0.05: good=name; snap('01-joystick-'+name); break
+          print('JOY MAPPING',good)
+          if good:
+              f=maps[good]
+              s0=state(); x0,y0=f(437,200); x1,y1=f(600,200)
+              sh(f"idb ui swipe {x0:.0f} {y0:.0f} {x1:.0f} {y1:.0f} --duration 1 --udid {UDID}"); time.sleep(1)
+              print('PAN yaw',s0,'->',state()); snap('02-pan')
+              x,y=f(*rc)
+              sh(f"idb ui tap {x:.0f} {y:.0f} --duration 2 --udid {UDID}"); time.sleep(1)
+              snap('03-hold')
+          full=log(); open('out/touch.log','w').write(full)
+          print('\n'.join([l for l in full.splitlines() if 'CFTOUCH' in l and 'state' not in l][:60]))
+          PY
+          exit 0
+
+      - name: Upload the touch harness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: touch-harness
+          path: out
