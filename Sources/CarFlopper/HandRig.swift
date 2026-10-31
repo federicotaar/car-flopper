@@ -588,32 +588,36 @@ final class HandRig {
         // which sits ~4 mm toward -x/-y from the cut centroid; it is held
         // at all three throat points so the cone stays centered in the flesh
         // until the flare begins (keeps the tube inside the palm skin).
-        // Hem lip: the tube stays inside the skin through s=-0.0028
-        // (measured min margin +1.5 mm, relax and grip meshes), then flares
-        // 0.46 -> 1.14 over 0.8 mm and holds rim radius for the last 2 mm.
-        // The crossing is confined to a ~0.7 mm band directly under the lip,
-        // which overhangs it by >= 8 mm on every azimuth, so the emergence
-        // reads as a cuff hem instead of isolated tabs. thL (2 mm before the
-        // cuff, on axis) gives the flare/lip region ~0.25 mm ring spacing
-        // (8 samples per path segment).
+        // Rolled hem: the tube stays inside the skin through s=-0.005,
+        // then rises through a convex fillet roll (0.44 -> 1.14 over ~7 mm)
+        // instead of a washer step with a flat rim band. A washer edge
+        // silhouettes as spikes at grazing wrist poses (welder stance) and
+        // its flat cone exposes interior faces; the roll has no disc corner
+        // to scallop. The crossing band sits on the roll's flank (~1.4 mm
+        // wide) where the surface is smooth and convex. thA-thD (on axis)
+        // give the roll region ~0.2 mm ring spacing (8 samples/segment).
         let th0 = c0 - wz * 0.038 - u * 0.004 - v * 0.004
         let th1 = c0 - wz * 0.022 - u * 0.004 - v * 0.004
         let th2 = c0 - wz * 0.010 - u * 0.004 - v * 0.004
-        let thL = c0 - wz * 0.002
+        let thA = c0 - wz * 0.005
+        let thB = c0 - wz * 0.0032
+        let thC = c0 - wz * 0.0020
+        let thD = c0 - wz * 0.0010
         let hug = c0 + wz * 0.012
         let blend = c0 + wz * 0.006 + fd * 0.030
         let fa = blend + (el - blend) * 0.5
         let ua = el + (sh - el) * 0.35
         let mid2 = sh + (end - sh) * 0.5
-        let samples = sampleTubePath([th0, th1, th2, thL, c0, hug, blend, fa, el, ua, sh, mid2, end])
+        let samples = sampleTubePath([th0, th1, th2, thA, thB, thC, thD, c0, hug, blend, fa, el, ua, sh, mid2, end])
 
         // Radius keys in absolute meters along the path, measured from the cuff.
         // Negative s is inside the hand: a slim cone (fits the measured palm
         // cross-sections) flaring to the cuff rim at s = 0. The rim at 1.14x
         // wraps the measured wrist-cut ring with >= 3.9 mm margin.
         let radiusKeys: [(Float, Float)] = [
-            (-0.038, 0.32), (-0.022, 0.36), (-0.010, 0.42), (-0.004, 0.43), (-0.0028, 0.46),
-            (-0.002, 1.14), (0, 1.14), (0.010, 1.12), (0.04, 1.16), (0.14, 1.22),
+            (-0.038, 0.32), (-0.022, 0.36), (-0.010, 0.42), (-0.005, 0.44),
+            (-0.0032, 0.50), (-0.0020, 0.62), (-0.0010, 0.80), (0, 0.95),
+            (0.0012, 1.06), (0.0028, 1.13), (0.005, 1.14), (0.010, 1.13), (0.04, 1.16), (0.14, 1.22),
             (0.27, 1.24), (0.34, 1.20), (0.45, 1.28), (0.55, 1.40), (1.2, 1.60)
         ]
         // Cuff station: the sample nearest the measured cuff point (robust to
