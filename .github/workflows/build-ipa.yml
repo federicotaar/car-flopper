@@ -72,6 +72,7 @@ jobs:
           path: xtool/*.ipa
 
       - name: Publish release with IPA
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
