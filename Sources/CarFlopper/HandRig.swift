@@ -588,14 +588,13 @@ final class HandRig {
         // which sits ~4 mm toward -x/-y from the cut centroid; it is held
         // at all three throat points so the cone stays centered in the flesh
         // until the flare begins (keeps the tube inside the palm skin).
-        // Rolled hem: the tube stays inside the skin through s=-0.005,
-        // then rises through a convex fillet roll (0.44 -> 1.14 over ~7 mm)
-        // instead of a washer step with a flat rim band. A washer edge
-        // silhouettes as spikes at grazing wrist poses (welder stance) and
-        // its flat cone exposes interior faces; the roll has no disc corner
-        // to scallop. The crossing band sits on the roll's flank (~1.4 mm
-        // wide) where the surface is smooth and convex. thA-thD (on axis)
-        // give the roll region ~0.2 mm ring spacing (8 samples/segment).
+        // Fitted hem: the tube hugs the wrist skin envelope (~1.0-1.07x the
+        // cuff ellipse) through the whole cuff zone instead of necking under
+        // a raised roll. A necked throat under a flared crest leaves an open
+        // annulus: at grazing wrist poses the camera sees far-side wrist
+        // skin through the gap (run-91 welder slit), and the crest itself
+        // silhouettes as a raised dorsal band. thA-thD (on axis) give the
+        // cuff region ~0.2 mm ring spacing (8 samples/segment).
         let th0 = c0 - wz * 0.038 - u * 0.004 - v * 0.004
         let th1 = c0 - wz * 0.022 - u * 0.004 - v * 0.004
         let th2 = c0 - wz * 0.010 - u * 0.004 - v * 0.004
@@ -612,12 +611,14 @@ final class HandRig {
 
         // Radius keys in absolute meters along the path, measured from the cuff.
         // Negative s is inside the hand: a slim cone (fits the measured palm
-        // cross-sections) flaring to the cuff rim at s = 0. The rim at 1.14x
-        // wraps the measured wrist-cut ring with >= 3.9 mm margin.
+        // cross-sections) that ramps to the fitted cuff at s = 0. The cuff
+        // band at 1.01-1.07x wraps the measured wrist-cut ring (0.975x) with
+        // ~1.5-2.5 mm cloth margin, verified against the bent-wrist skin
+        // envelope at the welder/wrench/screwdriver poses.
         let radiusKeys: [(Float, Float)] = [
-            (-0.038, 0.32), (-0.022, 0.36), (-0.010, 0.42), (-0.005, 0.44),
-            (-0.0032, 0.50), (-0.0020, 0.62), (-0.0010, 0.80), (0, 0.95),
-            (0.0012, 1.06), (0.0028, 1.13), (0.005, 1.14), (0.010, 1.13), (0.04, 1.16), (0.14, 1.22),
+            (-0.038, 0.32), (-0.022, 0.45), (-0.010, 0.85), (-0.005, 1.01),
+            (-0.0032, 1.02), (-0.0020, 1.03), (-0.0010, 1.04), (0, 1.06),
+            (0.0012, 1.06), (0.0028, 1.065), (0.005, 1.07), (0.010, 1.09), (0.04, 1.14), (0.14, 1.21),
             (0.27, 1.24), (0.34, 1.20), (0.45, 1.28), (0.55, 1.40), (1.2, 1.60)
         ]
         // Cuff station: the sample nearest the measured cuff point (robust to
