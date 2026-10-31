@@ -265,7 +265,8 @@ jobs:
           export PATH="$(dirname "$CP"):$PATH"
           idb connect 127.0.0.1 9999 >> out/diag.txt 2>&1
           idb list-targets >> out/diag.txt 2>&1
-          idb ui describe-all --udid "$UDID" --companion 127.0.0.1:9999 > out/ax.json 2> out/ax.err
+          idb ui describe-all --udid "$UDID" > out/ax.json 2> out/ax.err
+          if [ ! -s out/ax.json ]; then echo "PREFLIGHT FAIL: companion/connectivity/accessibility output empty" | tee out/RESULT.txt; exit 1; fi
           head -c 600 out/ax.json; echo; tail -3 out/ax.err
           head -c 1500 out/ax.json; echo; cat out/ax.err | head -5
           python3 - <<'PY'
@@ -302,10 +303,10 @@ jobs:
           if J: jc=(J['x']+J['width']/2,J['y']+J['height']/2)
           if R: rc=(R['x']+R['width']/2,R['y']+R['height']/2)
           print('centers',jc,rc)
-          good=None
+          good=None; PAN_OK=False
           for name,f in maps.items():
               s0=state(); x0,y0=f(*jc); x1,y1=f(jc[0]+40,jc[1])
-              r=sh(f"idb ui swipe {x0:.0f} {y0:.0f} {x1:.0f} {y1:.0f} --duration 2 --udid {UDID} --companion 127.0.0.1:9999")
+              r=sh(f"idb ui swipe {x0:.0f} {y0:.0f} {x1:.0f} {y1:.0f} --duration 2 --udid {UDID}")
               print(name,'swipe',r.returncode,r.stderr[:120]); time.sleep(1)
               s1=state(); print(name,'state',s0,'->',s1)
               if s0 and s1 and (abs(s0[0]-s1[0])+abs(s0[1]-s1[1]))>0.05: good=name; snap('01-joystick-'+name); break
@@ -313,15 +314,19 @@ jobs:
           if good:
               f=maps[good]
               s0=state(); x0,y0=f(437,200); x1,y1=f(600,200)
-              sh(f"idb ui swipe {x0:.0f} {y0:.0f} {x1:.0f} {y1:.0f} --duration 1 --udid {UDID} --companion 127.0.0.1:9999"); time.sleep(1)
-              print('PAN yaw',s0,'->',state()); snap('02-pan')
+              sh(f"idb ui swipe {x0:.0f} {y0:.0f} {x1:.0f} {y1:.0f} --duration 1 --udid {UDID}"); time.sleep(1)
+              s1=state(); print('PAN yaw',s0,'->',s1); snap('02-pan'); PAN_OK=bool(s0 and s1 and abs(s0[2]-s1[2])>0.01)
               x,y=f(*rc)
-              sh(f"idb ui tap {x:.0f} {y:.0f} --duration 2 --udid {UDID} --companion 127.0.0.1:9999"); time.sleep(1)
+              sh(f"idb ui tap {x:.0f} {y:.0f} --duration 2 --udid {UDID}"); time.sleep(1)
               snap('03-hold')
           full=log(); open('out/touch.log','w').write(full)
+          HOLD_OK=any('repairing=1' in l for l in full.splitlines())
+          v=f'RESULT joystick={good} pan={PAN_OK} repairHold={HOLD_OK}'; print(v); open('out/RESULT.txt','w').write(v+chr(10))
+          import sys
+          if not (good and PAN_OK and HOLD_OK): print('HARNESS FAIL: expected handler events missing'); sys.exit(1)
           print('\n'.join([l for l in full.splitlines() if 'CFTOUCH' in l and 'state' not in l][:60]))
           PY
-          exit 0
+          exit $?
 
       - name: Upload the touch harness evidence
         if: always()
