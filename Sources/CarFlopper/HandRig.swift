@@ -63,6 +63,7 @@ final class HandRig {
     private var swayY: Float = 0
     private var workTime: Float = 0
     //ADLOG private var logT: Float = 0
+    //ADLOG private var extLogT: Double = 0
 
     // camera-space rest pose: lower right, forearm entering off-screen
     private let restPos = SCNVector3(0.150, -0.075, -0.360)
@@ -671,6 +672,14 @@ final class HandRig {
                               elements: [SCNGeometryElement(indices: indices, primitiveType: .triangles)])
         if let m = forearmMaterial { geo.materials = [m] }
         forearmExt.geometry = geo
+        // Cuff telemetry (sim-only via //ADLOG): the offline replica bench
+        // needs the engine's actual cuff anchor, wrist axis and work-pivot
+        // rotation; the existing CFHAND line logs position only.
+        //ADLOG let nowAD = CACurrentMediaTime()
+        //ADLOG if nowAD - extLogT > 0.5 {
+        //ADLOG     extLogT = nowAD
+        //ADLOG     NSLog("[CFAUTODRIVE][CFCUFF] tool=%@ pose=(%.4f,%.4f,%.4f) wristRot=(%.4f,%.4f,%.4f,%.4f) cuff=(%.4f,%.4f,%.4f) wz=(%.4f,%.4f,%.4f)", currentTool ?? "-", Double(pose.position.x), Double(pose.position.y), Double(pose.position.z), Double(wrist.rotation.x), Double(wrist.rotation.y), Double(wrist.rotation.z), Double(wrist.rotation.w), Double(c0.x), Double(c0.y), Double(c0.z), Double(wz.x), Double(wz.y), Double(wz.z))
+        //ADLOG }
     }
 
     // Conservative root-space frustum test (fov 68, landscape): true while the
