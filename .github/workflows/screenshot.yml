@@ -86,7 +86,7 @@ jobs:
           xcrun simctl spawn cf-shot defaults write federicotaranu.carflopper carflopper.nick -string SIMHOST || true
           ARGS="-CFAutoDrive"
           if [ "${{ inputs.autodrive_debug }}" = "true" ]; then ARGS="$ARGS -CFAutoDriveDebug"; fi
-          if [ "${{ inputs.mode }}" = "repair" ]; then ARGS="$ARGS -CFAutoDriveRepair"; fi
+          if [ "${{ inputs.mode }}" = "repair" ]; then ARGS="$ARGS -CFAutoDriveRepair -CFStressCuff"; fi
           xcrun simctl launch cf-shot federicotaranu.carflopper $ARGS || true
           mkdir -p shots
           sleep 4
