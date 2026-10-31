@@ -516,10 +516,13 @@ final class HandRig {
         let v = simd_normalize(SIMD3<Float>(d.x,d.y,d.z))
         wrist.rotation = SCNVector4(v.x,v.y,v.z,angle)
     }
-    // Forearm + sleeve tube. The path runs from a hidden start inside the hand
-    // through the measured wrist-ring cuff, drapes along the forearm axis
-    // (elbow-cuff, not the flexed wrist axis), bends at the two-bone elbow and
-    // escapes off the lower-right edge of the frame so no end cap ever shows.
+    // Forearm + sleeve tube. The path starts as a slim throat buried in the
+    // palm along the hand's distal axis (-wz, offset toward the palm interior
+    // to clear the thumb root), flares to the cuff ring at the measured wrist
+    // cut with the ring held perpendicular to the hand axis so the rim matches
+    // the mesh's own cut plane at any flex angle, hugs +wz just past the cut,
+    // then bends to the forearm axis inside the opaque sleeve, curves at the
+    // two-bone elbow and escapes off the lower-right frame edge.
     private func updateForearmExt() {
         // Measured centroid of the skin mesh's planar wrist-cut ring (wrist
         // space, relax grip; the grip pose differs by <1 mm). Covering this
@@ -579,20 +582,31 @@ final class HandRig {
         }
 
         // Centripetal Catmull-Rom control points; a uniform CR overshoots on
-        // this uneven spacing.
-        let hidden = c0 - wz * 0.03
-        let c1 = c0 + fd * 0.055
-        let fa = c1 + (el - c1) * 0.55
+        // this uneven spacing. The two throat points inside the hand keep the
+        // cuff ring's tangent parallel to wz (ring plane = wrist cut plane);
+        // the palm-interior offset follows the skin cross-section centroid,
+        // which sits ~4 mm toward -x/-y from the cut centroid.
+        let th0 = c0 - wz * 0.038 - u * 0.004 - v * 0.004
+        let th1 = c0 - wz * 0.022 - u * 0.002 - v * 0.002
+        let hug = c0 + wz * 0.030
+        let blend = c0 + wz * 0.020 + fd * 0.040
+        let fa = blend + (el - blend) * 0.5
         let ua = el + (sh - el) * 0.35
         let mid2 = sh + (end - sh) * 0.5
-        let samples = sampleTubePath([hidden, c0, c1, fa, el, ua, sh, mid2, end])
+        let samples = sampleTubePath([th0, th1, c0, hug, blend, fa, el, ua, sh, mid2, end])
 
         // Radius keys in absolute meters along the path, measured from the cuff.
+        // Negative s is inside the hand: a slim cone (fits the measured palm
+        // cross-sections) flaring to the cuff rim at s = 0. The rim at 1.14x
+        // wraps the measured wrist-cut ring with >= 3.9 mm margin.
         let radiusKeys: [(Float, Float)] = [
-            (-0.03, 0.96), (0, 1.06), (0.04, 1.12), (0.14, 1.22),
+            (-0.038, 0.32), (-0.022, 0.36), (-0.010, 0.44), (-0.004, 0.58),
+            (0, 1.14), (0.010, 1.12), (0.04, 1.16), (0.14, 1.22),
             (0.27, 1.24), (0.34, 1.20), (0.45, 1.28), (0.55, 1.40), (1.2, 1.60)
         ]
-        let cuffS = samples.count > 8 ? samples[8].s : 0.03
+        // Cuff station: the sample nearest the measured cuff point (robust to
+        // control-point count; do not index by samples-per-segment).
+        let cuffS = samples.min(by: { simd_distance($0.pos, c0) < simd_distance($1.pos, c0) })?.s ?? 0.038
 
         // Parallel-transported ring frames seeded from the wrist axes so the
         // elliptical section stays oriented to the hand at the cuff.
