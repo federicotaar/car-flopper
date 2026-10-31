@@ -270,19 +270,44 @@ struct GameView: View {
         #endif
     }
 
+    // Simulator touch harness (-CFTouchTest): once in the garage, log the
+    // state that real HID touches (idb) must change. Compiled out of release.
+    private func touchProbe() {
+        #if AUTODRIVE
+        guard ProcessInfo.processInfo.arguments.contains("-CFTouchTest") else { return }
+        NSLog("[CFTOUCH] probe armed")
+        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+            let c = vm.sceneCtrl
+            NSLog("[CFTOUCH] state pos=(%.3f,%.3f) yaw=%.3f joy=(%.2f,%.2f) repairing=%d part=%@ tool=%@ range=%d",
+                  Double(c.localPosition.x), Double(c.localPosition.z), Double(c.cameraYaw),
+                  Double(c.joystickVector.dx), Double(c.joystickVector.dy), vm.isRepairing ? 1 : 0,
+                  vm.activePart?.label ?? "-", vm.heldTool ?? "-", vm.withinWorkingRange ? 1 : 0)
+        }
+        #endif
+    }
+
     var body: some View {
         ZStack {
             SceneViewBridge(controller: vm.sceneCtrl, onReady: { sceneReady = true })
                 .ignoresSafeArea()
-                .onAppear { autoDriveGame() }
+                .onAppear { autoDriveGame(); touchProbe() }
 
             VStack {
                 hud
                 Spacer()
                 HStack(alignment: .bottom) {
                     VStack(spacing: 6) {
-                        JoystickView { v in vm.sceneCtrl.joystickVector = v }
+                        JoystickView { v in
+                            vm.sceneCtrl.joystickVector = v
+                            #if AUTODRIVE
+                            NSLog("[CFTOUCH] joystick dx=%.2f dy=%.2f", Double(v.dx), Double(v.dy))
+                            #endif
+                        }
                             .frame(width: 130, height: 130)
+                            #if AUTODRIVE
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel("cf-joystick")
+                            #endif
                         toolChip
                     }
                     .padding(.leading, 24)
@@ -345,7 +370,12 @@ struct GameView: View {
         // One down-edge starts one repair. Further motion cannot start a
         // same-tool neighbor after completion. GestureState resets on lift
         // and cancellation, so either path also releases the network hold.
-        .onChange(of: repairFingerDown) { _, down in vm.setRepairing(down) }
+        .onChange(of: repairFingerDown) { _, down in
+            vm.setRepairing(down)
+            #if AUTODRIVE
+            NSLog("[CFTOUCH] repairFingerDown=%d", down ? 1 : 0)
+            #endif
+        }
         .onDisappear { vm.setRepairing(false) }
         .animation(.easeInOut(duration: 0.25), value: vm.toolToast)
         .background(Color.black)
@@ -431,6 +461,10 @@ struct GameView: View {
                         DragGesture(minimumDistance: 0)
                             .updating($repairFingerDown) { _, down, _ in down = true }
                     )
+                    #if AUTODRIVE
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("cf-repair")
+                    #endif
             }
             .transition(.scale.combined(with: .opacity))
         }
@@ -626,6 +660,9 @@ struct SceneViewBridge: UIViewRepresentable {
             controller.cameraYaw -= Float(t.x) * 0.006
             pitch = max(-1.1, min(1.1, pitch - Float(t.y) * 0.006))
             g.setTranslation(.zero, in: g.view)
+            #if AUTODRIVE
+            NSLog("[CFTOUCH] pan state=%d dx=%.1f dy=%.1f yaw=%.3f pitch=%.3f touches=%d", g.state.rawValue, Double(t.x), Double(t.y), Double(controller.cameraYaw), Double(pitch), g.numberOfTouches)
+            #endif
         }
 
         func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
