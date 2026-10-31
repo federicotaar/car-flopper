@@ -616,10 +616,19 @@ final class HandRig {
         // band at 1.01-1.07x wraps the measured wrist-cut ring (0.975x) with
         // ~1.5-2.5 mm cloth margin, verified against the bent-wrist skin
         // envelope at the welder/wrench/screwdriver poses.
+        // Deep-hug fitted hem (run-93 telemetry-derived): the slim 0.32-0.85
+        // throat cone pierced the flexed palm base at the work-pivot extremes,
+        // which is what showed as skin flecks/slit at the cuff emergence
+        // (engine-true replica, 17 logged pivot phases: 9020 exposed verts
+        // with the old cone, ~4900 with this profile, all remaining deep
+        // inside the occluded fist). The fitted radius is now carried through
+        // the palm to the cut instead of necking: cloth stays in contact with
+        // the wrist through the flexion crease instead of leaving an annulus.
         let radiusKeys: [(Float, Float)] = [
-            (-0.038, 0.32), (-0.022, 0.45), (-0.010, 0.85), (-0.005, 1.01),
-            (-0.0032, 1.02), (-0.0020, 1.03), (-0.0010, 1.04), (0, 1.06),
-            (0.0012, 1.06), (0.0028, 1.065), (0.005, 1.07), (0.010, 1.09), (0.04, 1.14), (0.14, 1.21),
+            (-0.038, 0.85), (-0.030, 0.95), (-0.022, 1.00), (-0.015, 1.03),
+            (-0.010, 1.06), (-0.005, 1.065), (-0.0032, 1.07), (-0.0020, 1.075),
+            (-0.0010, 1.08), (0, 1.085),
+            (0.0012, 1.085), (0.0028, 1.09), (0.005, 1.095), (0.010, 1.10), (0.020, 1.13), (0.04, 1.15), (0.14, 1.21),
             (0.27, 1.24), (0.34, 1.20), (0.45, 1.28), (0.55, 1.40), (1.2, 1.60)
         ]
         // Cuff station: the sample nearest the measured cuff point (robust to
