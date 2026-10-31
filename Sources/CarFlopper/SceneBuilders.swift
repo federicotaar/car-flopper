@@ -365,6 +365,7 @@ enum GarageBuilder {
         key.color = UIColor(red: 0.98, green: 0.97, blue: 0.94, alpha: 1)
         key.intensity = 850
         key.castsShadow = true
+        key.categoryBitMask = 1 // hand rig (category 2) has its own unshadowed key
 #if targetEnvironment(simulator)
         key.shadowMapSize = CGSize(width: 512, height: 512)
         key.shadowSampleCount = 4
