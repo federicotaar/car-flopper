@@ -49,12 +49,12 @@ P('CAL matrix cols', axc, ayc, 'det', det)
 if not RES['joystick_calibrated']:
     open('out/RESULT.txt', 'w').write('HARNESS FAIL: joystick calibration degenerate\n'); sys.exit(1)
 speed = (math.hypot(*axc) + math.hypot(*ayc)) / 2 / 1.5
-def nav(tx, tz, tol, maxit=25, stop_in_range=False):
+def nav(tx, tz, tol, maxit=25, stop_in_range=False, need_t=None):
     for i in range(maxit):
         s = st()
         if s is None: continue
         dx, dz = tx - s['x'], tz - s['z']; dist = math.hypot(dx, dz)
-        if dist < tol or (stop_in_range and s['rng'] == 1): return s
+        if dist < tol or (stop_in_range and s['rng'] == 1 and s['need'] == need_t): return s
         # solve [axc ayc] u = d
         ux = (dx * ayc[1] - ayc[0] * dz) / det
         uy = (axc[0] * dz - dx * axc[1]) / det
@@ -66,24 +66,26 @@ def nav(tx, tz, tol, maxit=25, stop_in_range=False):
 done = False
 for attempt in range(4):
     s = st(); P('LOOP', attempt, s)
-    if not s or not s['need'] or s['need'] == '-':
+    if not s: continue
+    if s['need'] and s['need'] != '-':
+        need_t, aim_t = s['need'], (s['ax'], s['az'])
+    elif 'need_t' not in globals():
         P('no active part/need'); break
-    if s['tool'] != s['need']:
-        sx, sz = STATIONS[s['need']]
+    if s['tool'] != need_t:
+        sx, sz = STATIONS[need_t]
         nav(sx, sz, 0.6)
         t0 = time.time()
         while time.time() - t0 < 8:
             s = st()
-            if s and s['tool'] == s['need']: break
+            if s and s['tool'] == need_t: break
             time.sleep(1)
-        P('TOOL', s['tool'] if s else None, 'need', s['need'] if s else None)
-        RES['tool_equipped'] = bool(s and s['tool'] == s['need'])
+        P('TOOL', s['tool'] if s else None, 'need_t', need_t)
+        RES['tool_equipped'] = bool(s and s['tool'] == need_t)
         if not RES['tool_equipped']: continue
         s = st()
-    if s['ax'] is None: break
-    s = nav(s['ax'], s['az'], 0.35, stop_in_range=True)
+    s = nav(aim_t[0], aim_t[1], 0.35, stop_in_range=True, need_t=need_t)
     P('AT PART', s)
-    RES['in_range'] = bool(s and s['rng'] == 1)
+    RES['in_range'] = bool(s and s['rng'] == 1 and s['need'] == need_t)
     if not RES['in_range']: continue
     prog0 = s['prog']; snap('04-inrange-before-hold')
     x, y = f(*RC)
