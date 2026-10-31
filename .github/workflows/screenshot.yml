@@ -254,7 +254,15 @@ jobs:
           sleep 5
           mkdir -p out
           xcrun simctl io cf-touch screenshot out/00-before.png
+          { echo "which: $(command -v idb_companion)"; ls /opt/homebrew/bin /usr/local/bin 2>/dev/null | grep -i idb; brew list idb-companion 2>&1 | head -5; } > out/diag.txt 2>&1
+          CP=$(command -v idb_companion || ls /opt/homebrew/bin/idb_companion /usr/local/bin/idb_companion 2>/dev/null | head -1)
+          echo "companion: $CP" | tee -a out/diag.txt
+          ($CP --udid "$UDID" --grpc-port 9999 > out/companion.log 2>&1 &)
+          sleep 8
+          idb connect localhost 9999 >> out/diag.txt 2>&1
+          idb list-targets >> out/diag.txt 2>&1
           idb ui describe-all --udid "$UDID" > out/ax.json 2> out/ax.err
+          head -c 600 out/ax.json; echo; tail -3 out/ax.err
           head -c 1500 out/ax.json; echo; cat out/ax.err | head -5
           python3 - <<'PY'
           import json,subprocess,re,time,os
