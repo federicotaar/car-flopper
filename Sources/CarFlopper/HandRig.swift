@@ -599,12 +599,16 @@ final class HandRig {
         let sides = 16
         var vertices = [SCNVector3](), normals = [SCNVector3](), indices = [Int32]()
         var bx = u - samples[0].tan * simd_dot(u, samples[0].tan)
+        if simd_length(bx) < 0.0001 { bx = simd_cross(samples[0].tan, SIMD3<Float>(0, 1, 0)) }
+        if simd_length(bx) < 0.0001 { bx = SIMD3<Float>(1, 0, 0) }
         bx = simd_normalize(bx)
         var by = simd_normalize(simd_cross(samples[0].tan, bx))
         for i in 0..<samples.count {
             let smp = samples[i]
             if i > 0 {
                 bx = bx - smp.tan * simd_dot(bx, smp.tan)
+                if simd_length(bx) < 0.0001 { bx = simd_cross(smp.tan, SIMD3<Float>(0, 1, 0)) }
+                if simd_length(bx) < 0.0001 { bx = SIMD3<Float>(1, 0, 0) }
                 bx = simd_normalize(bx)
                 by = simd_normalize(simd_cross(smp.tan, bx))
             }
@@ -654,9 +658,9 @@ final class HandRig {
             let p2 = p[seg + 1]
             let p3 = p[min(n - 1, seg + 2)]
             let t0: Float = 0
-            let t1 = t0 + powf(simd_distance(p0, p1), 0.5)
-            let t2 = t1 + powf(simd_distance(p1, p2), 0.5)
-            let t3 = t2 + powf(simd_distance(p2, p3), 0.5)
+            let t1 = t0 + max(powf(simd_distance(p0, p1), 0.5), 0.01)
+            let t2 = t1 + max(powf(simd_distance(p1, p2), 0.5), 0.01)
+            let t3 = t2 + max(powf(simd_distance(p2, p3), 0.5), 0.01)
             for k in 0..<8 {
                 let t = t1 + (t2 - t1) * Float(k) / 8
                 func blend(_ x: SIMD3<Float>, _ y: SIMD3<Float>, _ ta: Float, _ tb: Float) -> SIMD3<Float> {
@@ -670,7 +674,9 @@ final class HandRig {
                 let cp = blend(b1, b2, t1, t2)
                 s += simd_distance(prev, cp)
                 prev = cp
-                out.append((pos: cp, tan: simd_normalize(b2 - b1), s: s))
+                let tanRaw = b2 - b1
+                let tan = simd_length(tanRaw) > 0.0001 ? simd_normalize(tanRaw) : (out.last?.tan ?? SIMD3<Float>(0, -1, 0))
+                out.append((pos: cp, tan: tan, s: s))
             }
         }
         s += simd_distance(prev, p[n - 1])
