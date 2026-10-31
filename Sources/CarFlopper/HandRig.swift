@@ -64,6 +64,7 @@ final class HandRig {
     private var workTime: Float = 0
     //ADLOG private var logT: Float = 0
     //ADLOG private var extLogT: Double = 0
+    //ADLOG private var stressT: Double = 0
 
     // camera-space rest pose: lower right, forearm entering off-screen
     private let restPos = SCNVector3(0.150, -0.075, -0.360)
@@ -477,6 +478,16 @@ final class HandRig {
                                        pose.position.y + goal.y - tip.y,
                                        pose.position.z + goal.z - tip.z)
         }
+        //ADLOG // Stress sweep (sim-only, -CFStressCuff): pitch the wrist through
+        //ADLOG // +-35 deg about its local x during welder work so every validation
+        //ADLOG // run captures the cuff across the full grazing-angle envelope,
+        //ADLOG // including worse-than-observed configurations. Deterministic;
+        //ADLOG // stripped from production by the ADLOG gate. The work pivot's
+        //ADLOG // axis-angle rotation composes into the same wrist transform.
+        //ADLOG if ProcessInfo.processInfo.arguments.contains("-CFStressCuff"), mode == .working, currentTool == "welder" {
+        //ADLOG     stressT += Double(dt)
+        //ADLOG     wrist.eulerAngles.x += Float(sin(stressT * 0.7) * 0.61)
+        //ADLOG }
         updateForearmExt()
         //ADLOG logT += dt
         //ADLOG if logT >= 1 {
@@ -687,7 +698,7 @@ final class HandRig {
         //ADLOG let nowAD = CACurrentMediaTime()
         //ADLOG if nowAD - extLogT > 0.5 {
         //ADLOG     extLogT = nowAD
-        //ADLOG     NSLog("[CFAUTODRIVE][CFCUFF] tool=%@ pose=(%.4f,%.4f,%.4f) wristRot=(%.4f,%.4f,%.4f,%.4f) cuff=(%.4f,%.4f,%.4f) wz=(%.4f,%.4f,%.4f)", currentTool ?? "-", Double(pose.position.x), Double(pose.position.y), Double(pose.position.z), Double(wrist.rotation.x), Double(wrist.rotation.y), Double(wrist.rotation.z), Double(wrist.rotation.w), Double(c0.x), Double(c0.y), Double(c0.z), Double(wz.x), Double(wz.y), Double(wz.z))
+        //ADLOG     NSLog("[CFAUTODRIVE][CFCUFF] tool=%@ pose=(%.4f,%.4f,%.4f) wristRot=(%.4f,%.4f,%.4f,%.4f) cuff=(%.4f,%.4f,%.4f) wz=(%.4f,%.4f,%.4f) el=(%.4f,%.4f,%.4f) sh=(%.4f,%.4f,%.4f) fd=(%.4f,%.4f,%.4f)", currentTool ?? "-", Double(pose.position.x), Double(pose.position.y), Double(pose.position.z), Double(wrist.rotation.x), Double(wrist.rotation.y), Double(wrist.rotation.z), Double(wrist.rotation.w), Double(c0.x), Double(c0.y), Double(c0.z), Double(wz.x), Double(wz.y), Double(wz.z), Double(el.x), Double(el.y), Double(el.z), Double(sh.x), Double(sh.y), Double(sh.z), Double(fd.x), Double(fd.y), Double(fd.z))
         //ADLOG }
     }
 
