@@ -631,6 +631,11 @@ final class HandRig {
                 indices += [a, b, cc, a, cc, d]
             }
         }
+        // Finite-geometry regression guard: a NaN ring poisons the whole tube
+        // and SceneKit silently renders nothing. Keep the previous frame's
+        // geometry instead of blanking the arm.
+        guard vertices.allSatisfy({ $0.x.isFinite && $0.y.isFinite && $0.z.isFinite }),
+              normals.allSatisfy({ $0.x.isFinite && $0.y.isFinite && $0.z.isFinite }) else { return }
         let geo = SCNGeometry(sources: [SCNGeometrySource(vertices: vertices), SCNGeometrySource(normals: normals)],
                               elements: [SCNGeometryElement(indices: indices, primitiveType: .triangles)])
         if let m = forearmMaterial { geo.materials = [m] }
