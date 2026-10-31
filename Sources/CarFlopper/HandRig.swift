@@ -588,8 +588,14 @@ final class HandRig {
         // the shoulder near the camera plane. The tube folded there and showed
         // its dark inside as a ragged band across the forearm. The elbow is
         // already off-screen, so continue straight along the forearm axis.
-        let shPath = el + fd * 0.26
-        let esc = fd
+        // Run 109: the straight continuation heads toward the camera (fd.z>0 at
+        // the wheel pose), so the tube crosses the 0.05 near plane near the frame
+        // edge. The clipped wall shows the dark inside as a hard black block.
+        // Clamp the escape direction so the sleeve leaves down/right, away from
+        // the camera.
+        let fdc = simd_normalize(SIMD3<Float>(fd.x, fd.y, min(fd.z, 0.10)))
+        let shPath = el + fdc * 0.26
+        let esc = fdc
         var end = shPath + esc * 0.12
         var ext: Float = 0.12
         while escapeOnScreen(end) && ext < 0.7 {
