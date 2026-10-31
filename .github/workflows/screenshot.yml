@@ -223,11 +223,14 @@ jobs:
       - name: Install idb (free, open source HID injector)
         run: |
           set +e
-          brew tap facebook/fb 2>&1 | tail -2
-          brew install idb-companion 2>&1 | tail -8
+          mkdir -p /tmp/idbc && cd /tmp/idbc
+          curl -sL -o c.tgz https://github.com/facebook/idb/releases/download/v1.1.8/idb-companion.universal.tar.gz
+          tar xzf c.tgz 2>&1 | tail -2
+          find /tmp/idbc -name idb_companion | head -3
+          cd - >/dev/null
           python3 -m venv /tmp/idbvenv
           /tmp/idbvenv/bin/pip install fb-idb 2>&1 | tail -3
-          which idb_companion; ls /tmp/idbvenv/bin | head -20
+          find /tmp/idbc -name idb_companion | head -3; ls /tmp/idbvenv/bin | head -20
           /tmp/idbvenv/bin/idb --help 2>&1 | head -5
           exit 0
 
@@ -255,7 +258,7 @@ jobs:
           mkdir -p out
           xcrun simctl io cf-touch screenshot out/00-before.png
           { echo "which: $(command -v idb_companion)"; ls /opt/homebrew/bin /usr/local/bin 2>/dev/null | grep -i idb; brew list idb-companion 2>&1 | head -5; } > out/diag.txt 2>&1
-          CP=$(command -v idb_companion || ls /opt/homebrew/bin/idb_companion /usr/local/bin/idb_companion 2>/dev/null | head -1)
+          CP=$(find /tmp/idbc -name idb_companion -type f | head -1); [ -z "$CP" ] && CP=$(command -v idb_companion || ls /opt/homebrew/bin/idb_companion /usr/local/bin/idb_companion 2>/dev/null | head -1)
           echo "companion: $CP" | tee -a out/diag.txt
           ($CP --udid "$UDID" --grpc-port 9999 > out/companion.log 2>&1 &)
           sleep 8
