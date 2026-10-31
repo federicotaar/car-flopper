@@ -278,10 +278,12 @@ struct GameView: View {
         NSLog("[CFTOUCH] probe armed")
         Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
             let c = vm.sceneCtrl
-            NSLog("[CFTOUCH] state pos=(%.3f,%.3f) yaw=%.3f joy=(%.2f,%.2f) repairing=%d part=%@ tool=%@ range=%d",
+            let ap = vm.activePart; let aim = ap.flatMap { c.partAimWorld($0.id) }
+            NSLog("[CFTOUCH] state pos=(%.3f,%.3f) yaw=%.3f joy=(%.2f,%.2f) repairing=%d part=%@ tool=%@ range=%d need=%@ aim=(%.3f,%.3f) prog=%.3f",
                   Double(c.localPosition.x), Double(c.localPosition.z), Double(c.cameraYaw),
                   Double(c.joystickVector.dx), Double(c.joystickVector.dy), vm.isRepairing ? 1 : 0,
-                  vm.activePart?.label ?? "-", vm.heldTool ?? "-", vm.withinWorkingRange ? 1 : 0)
+                  vm.activePart?.label ?? "-", vm.heldTool ?? "-", vm.withinWorkingRange ? 1 : 0,
+                  ap?.tool ?? "-", Double(aim?.x ?? 0), Double(aim?.z ?? 0), vm.activePartProgress)
         }
         #endif
     }
