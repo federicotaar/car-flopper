@@ -5,6 +5,7 @@ import simd
 // MARK: - In-game view: SceneKit canvas + joystick + repair button + HUD.
 
 struct GameView: View {
+    @GestureState private var repairFingerDown = false
     @ObservedObject var vm: GameViewModel
     var onLeave: () -> Void
     @State private var sceneReady = false
@@ -341,6 +342,11 @@ struct GameView: View {
             }
             #endif
         }
+        // One down-edge starts one repair. Further motion cannot start a
+        // same-tool neighbor after completion. GestureState resets on lift
+        // and cancellation, so either path also releases the network hold.
+        .onChange(of: repairFingerDown) { _, down in vm.setRepairing(down) }
+        .onDisappear { vm.setRepairing(false) }
         .animation(.easeInOut(duration: 0.25), value: vm.toolToast)
         .background(Color.black)
     }
@@ -423,8 +429,7 @@ struct GameView: View {
                     .scaleEffect(vm.wrongToolFlash ? 0.92 : 1.0)
                     .gesture(
                         DragGesture(minimumDistance: 0)
-                            .onChanged { _ in vm.setRepairing(true) }
-                            .onEnded { _ in vm.setRepairing(false) }
+                            .updating($repairFingerDown) { _, down, _ in down = true }
                     )
             }
             .transition(.scale.combined(with: .opacity))
