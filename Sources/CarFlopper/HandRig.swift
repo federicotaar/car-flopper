@@ -90,6 +90,11 @@ final class HandRig {
 
                 skin.isDoubleSided = true
         sleeveMat.isDoubleSided = true
+        // Run 112: thin black slits at the skin/sleeve join are the unlit
+        // interior of the double-sided meshes seen through a hairline crack.
+        // A small emission keeps any visible interior navy / skin coloured.
+        sleeveMat.emission.contents = UIColor(red: 0.045, green: 0.055, blue: 0.080, alpha: 1)
+        skin.emission.contents = UIColor(red: 0.16, green: 0.10, blue: 0.07, alpha: 1)
 
 
         // mesh hand (CC0 human-hand, two baked poses) replaces the capsule
@@ -680,7 +685,7 @@ final class HandRig {
 
         // Parallel-transported ring frames seeded from the wrist axes so the
         // elliptical section stays oriented to the hand at the cuff.
-        let sides = 24
+        let sides = 40
         var vertices = [SCNVector3](), normals = [SCNVector3](), indices = [Int32]()
         var bx = u - samples[0].tan * simd_dot(u, samples[0].tan)
         if simd_length(bx) < 0.0001 { bx = simd_cross(samples[0].tan, SIMD3<Float>(0, 1, 0)) }
