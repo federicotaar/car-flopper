@@ -584,13 +584,17 @@ final class HandRig {
         let fd = simd_normalize(el - c0)
 
         // Escape ray continuing past the lower-right frame edge.
-        var esc = simd_normalize(sh - el)
-        esc = simd_normalize(esc + SIMD3<Float>(0, -0.30, 0.12))
-        var end = sh + esc * 0.12
+        // Runs 105/107: the old path turned about 120 deg at the elbow toward
+        // the shoulder near the camera plane. The tube folded there and showed
+        // its dark inside as a ragged band across the forearm. The elbow is
+        // already off-screen, so continue straight along the forearm axis.
+        let shPath = el + fd * 0.26
+        let esc = fd
+        var end = shPath + esc * 0.12
         var ext: Float = 0.12
         while escapeOnScreen(end) && ext < 0.7 {
             ext += 0.05
-            end = sh + esc * ext
+            end = shPath + esc * ext
         }
 
         // Centripetal Catmull-Rom control points; a uniform CR overshoots on
@@ -621,9 +625,9 @@ final class HandRig {
         let hug = c0 + wz * 0.022
         let blend = c0 + wz * 0.028 + fd * 0.045
         let fa = blend + (el - blend) * 0.5
-        let ua = el + (sh - el) * 0.35
-        let mid2 = sh + (end - sh) * 0.5
-        let samples = sampleTubePath([thB, thC, thD, c0, hug, blend, fa, el, ua, sh, mid2, end])
+        let ua = el + (shPath - el) * 0.35
+        let mid2 = shPath + (end - shPath) * 0.5
+        let samples = sampleTubePath([thB, thC, thD, c0, hug, blend, fa, el, ua, shPath, mid2, end])
 
         // Radius keys in absolute meters along the path, measured from the cuff.
         // Negative s is inside the hand: a slim cone (fits the measured palm
