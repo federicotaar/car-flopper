@@ -614,8 +614,12 @@ final class HandRig {
         let thB = c0 - wz * 0.0032
         let thC = c0 - wz * 0.0020
         let thD = c0 - wz * 0.0010
-        let hug = c0 + wz * 0.012
-        let blend = c0 + wz * 0.006 + fd * 0.030
+        // Run-96 residuals (flat dorsal flap, bulky cuff): the path bent toward
+        // the forearm only 6 mm past the cut, so the outer side of that sharp
+        // bend stood off the wrist as a flap. Keep the tube on the wrist axis
+        // longer and turn over a longer arc; slim the cuff toward the skin.
+        let hug = c0 + wz * 0.022
+        let blend = c0 + wz * 0.028 + fd * 0.045
         let fa = blend + (el - blend) * 0.5
         let ua = el + (sh - el) * 0.35
         let mid2 = sh + (end - sh) * 0.5
@@ -639,8 +643,8 @@ final class HandRig {
             // Thin hem (no throat through the palm): the sleeve now ends 3.2 mm
             // inside the wrist cut and tucks to 0.93x there so the end sits on
             // the skin instead of leaving an open annulus or a raised roll.
-            (-0.0032, 0.93), (-0.0024, 1.03), (-0.0014, 1.07), (-0.0005, 1.08), (0, 1.085),
-            (0.0012, 1.085), (0.0028, 1.09), (0.005, 1.095), (0.010, 1.10), (0.020, 1.13), (0.04, 1.15), (0.14, 1.21),
+            (-0.0032, 0.93), (-0.0024, 1.00), (-0.0014, 1.035), (-0.0005, 1.045), (0, 1.05),
+            (0.0012, 1.05), (0.0028, 1.055), (0.005, 1.06), (0.010, 1.07), (0.020, 1.09), (0.04, 1.12), (0.14, 1.21),
             (0.27, 1.24), (0.34, 1.20), (0.45, 1.28), (0.55, 1.40), (1.2, 1.60)
         ]
         // Cuff station: the sample nearest the measured cuff point (robust to
