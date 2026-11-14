@@ -2,6 +2,22 @@
 // Worker routes HTTP/WS; one Durable Object per room holds state and relays.
 // Free-tier: Workers Free plan includes Durable Objects (since 2025-04-07).
 
+// HTTP surface (CORS open, the iOS app talks to it directly):
+//   POST /rooms            -> { code }   allocate a 4-letter room code
+//   GET  /rooms/:code      -> room snapshot (lobby state)
+//   GET  /rooms/:code/ws   -> WebSocket upgrade, joins the room
+//
+// WebSocket protocol (JSON both ways):
+//   client -> server: "pos" (x/z/ry/moving, capped at 25 Hz), "repair"
+//                     (part id while holding), "advance" (host only)
+//   server -> client: "welcome" (your player id), "state" (full room
+//                     snapshot every 500 ms), "event" (join/leave/part done/
+//                     car unlocked), "error" (room full, bad code, idle kick)
+//
+// Part ids and solo repair seconds must stay in sync with the iOS client's
+// GameContent.swift; the server is authoritative on progress so co-op
+// repair speed (COOP_BONUS per extra fixer) is identical for everyone.
+
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no I/L/O/0/1
 const MAX_PLAYERS = 4;
 const TICK_MS = 250;
