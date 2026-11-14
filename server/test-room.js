@@ -112,4 +112,19 @@ if (room.players.size !== 0) throw new Error("players not empty after last leave
 const reclaim = await room.fetch(new Request("https://do/claim?code=NEW2", { method: "POST" }));
 if (reclaim.status !== 200) throw new Error("released room could not be reclaimed");
 console.log("room release + reclaim OK");
+
+// repair guards: unknown parts are ignored, "off" clears, fixer counts refresh every tick
+const c = joinDirect("cleo");
+room.phase = "play";
+room.initCar();
+room.onMessage(c.server, c.player, { t: "repair", part: "flux-capacitor", on: true });
+if (c.player.repairing !== null) throw new Error("unknown part accepted for repair");
+room.onMessage(c.server, c.player, { t: "repair", part: "engine", on: true });
+if (c.player.repairing !== "engine") throw new Error("repair did not stick");
+room.tick();
+if (room.parts.engine.fixers !== 1) throw new Error("fixer count wrong: " + room.parts.engine.fixers);
+room.onMessage(c.server, c.player, { t: "repair", part: "engine", on: false });
+room.tick();
+if (room.parts.engine.fixers !== 0) throw new Error("fixer count did not refresh after off");
+console.log("repair guards OK");
 console.log("ALL ROOM LOGIC TESTS PASSED");
