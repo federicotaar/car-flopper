@@ -104,4 +104,12 @@ if (savedHost !== a.player.id) throw new Error("expected a to be host before mig
 room.onClose(a.server, a.player);
 if (room.hostId !== b.player.id) throw new Error("host did not migrate to remaining player");
 console.log("host migration OK");
+
+// room dies with the last player: code is released and can be claimed again
+room.onClose(b.server, b.player);
+if (room.claimed !== false) throw new Error("room still claimed after last player left");
+if (room.players.size !== 0) throw new Error("players not empty after last leave");
+const reclaim = await room.fetch(new Request("https://do/claim?code=NEW2", { method: "POST" }));
+if (reclaim.status !== 200) throw new Error("released room could not be reclaimed");
+console.log("room release + reclaim OK");
 console.log("ALL ROOM LOGIC TESTS PASSED");
