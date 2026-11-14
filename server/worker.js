@@ -182,7 +182,7 @@ export class GarageRoom {
       const partId = typeof msg.part === "string" ? msg.part : null;
       player.repairing = msg.on && partId && this.parts[partId] && this.parts[partId].progress < 1 ? partId : null;
     } else if (msg.t === "start" && player.id === this.hostId && this.phase === "lobby") {
-      this.initCar(this.carIndex);
+      this.initCar();
       this.phase = "play";
       this.broadcastState();
     } else if (msg.t === "pick" && player.id === this.hostId && this.phase === "lobby") {
@@ -191,7 +191,7 @@ export class GarageRoom {
     } else if (msg.t === "next" && player.id === this.hostId && this.phase === "complete") {
       if (this.carIndex + 1 < CAR_COUNT) {
         this.carIndex += 1;
-        this.initCar(this.carIndex);
+        this.initCar();
         this.phase = "play";
       } else {
         this.phase = "finished";
