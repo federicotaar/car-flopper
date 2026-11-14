@@ -97,4 +97,11 @@ room.onMessage(a.server, a.player, { t: "pos", x: 999, z: -999, ry: "junk", movi
 if (a.player.x !== 7.4 || a.player.z !== -5.4 || a.player.ry !== 0) throw new Error("pos not clamped");
 if (a.player.moving !== true) throw new Error("moving not coerced");
 console.log("pos clamping OK");
+
+// host migration: when the host leaves, the oldest remaining player becomes host
+const savedHost = room.hostId;
+if (savedHost !== a.player.id) throw new Error("expected a to be host before migration test");
+room.onClose(a.server, a.player);
+if (room.hostId !== b.player.id) throw new Error("host did not migrate to remaining player");
+console.log("host migration OK");
 console.log("ALL ROOM LOGIC TESTS PASSED");
