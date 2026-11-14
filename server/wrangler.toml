@@ -1,11 +1,15 @@
+# Cloudflare Worker config for the Car Flopper multiplayer server.
+# Deploy: `npx wrangler deploy` from this directory (needs a Cloudflare login).
 name = "car-flopper-api"
 main = "worker.js"
 compatibility_date = "2026-01-01"
 workers_dev = false
+# Serves the custom domain used by the iOS client (Net.swift); no workers.dev URL.
 routes = [
   { pattern = "car-flopper.federicotaranu.site", custom_domain = true }
 ]
 
+# One Durable Object per room code: authoritative room state + relays.
 [durable_objects]
 bindings = [
   { name = "GARAGE_ROOM", class_name = "GarageRoom" }
