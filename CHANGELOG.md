@@ -4,6 +4,10 @@ Le tappe principali di Car Flopper, dalle più recenti. Le versioni scaricabili 
 
 ## 2026-11-14
 
+- Server: codici stanza generati senza bias di modulo (rejection sampling).
+- Snapshot della stanza senza i campi interni del server (`lastSeen`, `lastPosAt`).
+- Commento del protocollo WebSocket allineato ai messaggi reali (`start`/`pick`/`next`).
+- Test della stanza: clamp delle posizioni, migrazione dell'host, rilascio della stanza, guardie sulle riparazioni, alfabeto dei codici.
 - README: link aggiornati dopo la rinomina dell'account GitHub in `federicotaar`.
 - Documentato il protocollo multiplayer in `server/worker.js` e come eseguire i test del server.
 
