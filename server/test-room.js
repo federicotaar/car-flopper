@@ -132,6 +132,27 @@ room.tick();
 if (room.parts.engine.fixers !== 0) throw new Error("fixer count did not refresh after off");
 console.log("repair guards OK");
 
+// tick measures real elapsed time: a lagging interval does not slow repairs,
+// and a stalled room jumps by at most 1s per tick
+{
+  const d = joinDirect("dario");
+  room.phase = "play";
+  room.initCar();
+  room.onMessage(d.server, d.player, { t: "repair", part: "engine", on: true });
+  const approx = (x, y) => Math.abs(x - y) < 1e-9;
+  let t = Date.now();
+  room.tick(t); // first tick after initCar: one nominal TICK_MS step
+  const p0 = room.parts.engine.progress;
+  if (!approx(p0, (TICK_MS / 1000) / 12)) throw new Error("first tick not nominal: " + p0);
+  t += 500; room.tick(t); // interval lagged to 2x: progress still follows the clock
+  const p1 = room.parts.engine.progress;
+  if (!approx(p1 - p0, 0.5 / 12)) throw new Error("lag not compensated: " + (p1 - p0));
+  t += 10000; room.tick(t); // a 10s stall is capped at 1s of progress
+  const p2 = room.parts.engine.progress;
+  if (!approx(p2 - p1, 1 / 12)) throw new Error("stall not capped at 1s: " + (p2 - p1));
+  console.log("real-dt tick OK");
+}
+
 // room codes: 4 chars, only from the unambiguous alphabet, and varied
 {
   const seen = new Set();
