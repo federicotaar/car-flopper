@@ -21,7 +21,7 @@
 
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no I/L/O/0/1
 const MAX_PLAYERS = 4;
-const TICK_MS = 250;
+export const TICK_MS = 250;
 const BROADCAST_EVERY = 2; // every 2 ticks = 500ms
 const COOP_BONUS = 0.7;
 const MAX_MSG_BYTES = 4096; // fail closed on junk
@@ -111,6 +111,7 @@ export class GarageRoom {
     this.parts = {}; // id -> {progress, fixers}
     this.colorPool = [0, 1, 2, 3];
     this.tickCount = 0;
+    this.lastTickAt = 0; // wall clock of the previous tick; 0 = no tick yet
     this.timer = null;
   }
 
@@ -219,6 +220,7 @@ export class GarageRoom {
     this.parts = {};
     for (const p of PARTS) this.parts[p.id] = { progress: 0, fixers: 0 };
     for (const pl of this.players.values()) pl.repairing = null;
+    this.lastTickAt = 0; // a fresh car starts with a clean clock
   }
 
   ensureTimer() {
@@ -226,9 +228,8 @@ export class GarageRoom {
     this.timer = setInterval(() => this.tick(), TICK_MS);
   }
 
-  tick() {
+  tick(now = Date.now()) {
     // ghost-socket cleanup so a dead client cannot pin a room forever
-    const now = Date.now();
     for (const [ws, pl] of [...this.players]) {
       if (now - pl.lastSeen > IDLE_KICK_MS) {
         try { ws.close(1001, "idle"); } catch {}
@@ -241,7 +242,10 @@ export class GarageRoom {
       for (const pl of this.players.values()) {
         if (pl.repairing && this.parts[pl.repairing]) this.parts[pl.repairing].fixers += 1;
       }
-      const dt = TICK_MS / 1000;
+      // Measure the real elapsed time instead of assuming one tick = TICK_MS:
+      // setInterval drifts when the isolate is busy and a fixed dt would slow
+      // repairs down. Capped at 1s so a stalled room does not jump ahead.
+      const dt = this.lastTickAt ? Math.min((now - this.lastTickAt) / 1000, 1) : TICK_MS / 1000;
       let allFixed = true;
       for (const def of PARTS) {
         const st = this.parts[def.id];
@@ -262,6 +266,7 @@ export class GarageRoom {
         this.broadcast({ t: "event", kind: "carComplete", car: String(this.carIndex) });
       }
     }
+    this.lastTickAt = now;
     this.tickCount += 1;
     if (this.tickCount % BROADCAST_EVERY === 0) this.broadcastState();
   }
