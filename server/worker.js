@@ -9,7 +9,8 @@
 //
 // WebSocket protocol (JSON both ways):
 //   client -> server: "pos" (x/z/ry/moving, capped at 25 Hz), "repair"
-//                     (part id while holding), "advance" (host only)
+//                     (part id while holding), and host-only "start",
+//                     "pick" (car index) and "next" (advance/finish)
 //   server -> client: "welcome" (your player id), "state" (full room
 //                     snapshot every 500 ms), "event" (join/leave/part done/
 //                     car unlocked), "error" (room full, bad code, idle kick)
