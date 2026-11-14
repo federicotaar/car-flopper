@@ -91,4 +91,10 @@ room.code = code;
 const snap = room.roomSnapshot();
 for (const k of ["code","phase","carIndex","hostId","players","parts"]) if (!(k in snap)) throw new Error("snapshot missing " + k);
 console.log("snapshot shape OK:", JSON.stringify({code: snap.code, players: snap.players.length}));
+
+// pos clamping: out-of-range coords land on the bounds, junk becomes 0
+room.onMessage(a.server, a.player, { t: "pos", x: 999, z: -999, ry: "junk", moving: 1 });
+if (a.player.x !== 7.4 || a.player.z !== -5.4 || a.player.ry !== 0) throw new Error("pos not clamped");
+if (a.player.moving !== true) throw new Error("moving not coerced");
+console.log("pos clamping OK");
 console.log("ALL ROOM LOGIC TESTS PASSED");
