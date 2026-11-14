@@ -1,4 +1,8 @@
-// Logic-level test of GarageRoom without Cloudflare runtime: stub WebSocketPair + timers.
+// Logic-level test of GarageRoom without the Cloudflare runtime: it stubs
+// WebSocketPair and timers, then drives the Durable Object class directly.
+// Covers join/leave, repair progress, co-op bonus, host-only car advance and
+// snapshot shape. No network, no wrangler needed: `node server/test-room.js`
+// (Node 22+ detects the module syntax automatically).
 
 const mod = await import("./worker.js");
 const { GarageRoom } = mod;
