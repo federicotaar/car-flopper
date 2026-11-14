@@ -1,4 +1,7 @@
 // Live 2-client co-op test against the deployed car-flopper-api.
+// Creates a real room over HTTPS, connects two WebSocket clients, repairs a
+// part together and checks that both see identical state. Hits production:
+// run it sparingly, after deploys, with `node server/test-live.js`.
 const BASE = "https://car-flopper.federicotaranu.site";
 const WS = "wss://car-flopper.federicotaranu.site";
 const fail = (m) => { console.error("FAIL: " + m); process.exit(1); };
