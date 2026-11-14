@@ -5,7 +5,7 @@
 // (Node 22+ detects the module syntax automatically).
 
 const mod = await import("./worker.js");
-const { GarageRoom, makeCode } = mod;
+const { GarageRoom, makeCode, TICK_MS } = mod;
 
 class FakeWS {
   constructor() { this.out = []; this.listeners = {}; this.readyState = 1; }
@@ -54,7 +54,11 @@ if (Object.keys(room.parts).length !== 8) throw new Error("parts not initialized
 // both repair engine (12s solo). With 2 players rate = 1.7/12 per sec.
 room.onMessage(a.server, a.player, { t: "repair", part: "engine", on: true });
 room.onMessage(b.server, b.player, { t: "repair", part: "engine", on: true });
-for (let i = 0; i < 40; i++) room.tick(); // 10s
+// synthetic clock: tick(now) gets explicit timestamps so the test does not
+// depend on how fast the loop happens to run
+let simNow = Date.now();
+const step = () => { simNow += TICK_MS; room.tick(simNow); };
+for (let i = 0; i < 40; i++) step(); // 10s
 const eng = room.parts.engine;
 console.log("engine after 10s co-op:", eng.progress.toFixed(3), "fixers:", eng.fixers);
 if (eng.progress < 0.9) throw new Error("co-op repair too slow: " + eng.progress);
@@ -63,9 +67,9 @@ if (eng.progress < 0.9) throw new Error("co-op repair too slow: " + eng.progress
 for (const def of Object.keys(room.parts)) {
   room.onMessage(a.server, a.player, { t: "repair", part: def, on: true });
   room.onMessage(b.server, b.player, { t: "repair", part: def, on: true });
-  for (let i = 0; i < 60 && room.parts[def].progress < 1; i++) room.tick();
+  for (let i = 0; i < 60 && room.parts[def].progress < 1; i++) step();
 }
-room.tick(); room.tick();
+step(); step();
 if (room.phase !== "complete") throw new Error("not complete, phase=" + room.phase);
 console.log("car complete OK");
 
