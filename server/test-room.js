@@ -5,7 +5,7 @@
 // (Node 22+ detects the module syntax automatically).
 
 const mod = await import("./worker.js");
-const { GarageRoom } = mod;
+const { GarageRoom, makeCode } = mod;
 
 class FakeWS {
   constructor() { this.out = []; this.listeners = {}; this.readyState = 1; }
@@ -127,4 +127,16 @@ room.onMessage(c.server, c.player, { t: "repair", part: "engine", on: false });
 room.tick();
 if (room.parts.engine.fixers !== 0) throw new Error("fixer count did not refresh after off");
 console.log("repair guards OK");
+
+// room codes: 4 chars, only from the unambiguous alphabet, and varied
+{
+  const seen = new Set();
+  for (let i = 0; i < 200; i++) {
+    const code = makeCode();
+    if (!/^[A-HJ-NP-Z2-9]{4}$/.test(code)) throw new Error("bad room code: " + code);
+    seen.add(code);
+  }
+  if (seen.size < 150) throw new Error("room codes suspiciously repetitive: " + seen.size + "/200");
+  console.log("makeCode charset OK");
+}
 console.log("ALL ROOM LOGIC TESTS PASSED");
