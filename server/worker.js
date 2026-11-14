@@ -40,11 +40,16 @@ const PARTS = [
 ];
 const CAR_COUNT = 3;
 
-function makeCode() {
+export function makeCode() {
+  // rejection sampling: 256 % 31 != 0, so plain "byte % 31" would favor
+  // the first few alphabet entries; redraw bytes >= limit instead
+  const limit = Math.floor(256 / CODE_ALPHABET.length) * CODE_ALPHABET.length;
   let c = "";
-  const bytes = new Uint8Array(4);
-  crypto.getRandomValues(bytes);
-  for (const b of bytes) c += CODE_ALPHABET[b % CODE_ALPHABET.length];
+  while (c.length < 4) {
+    const bytes = new Uint8Array(4);
+    crypto.getRandomValues(bytes);
+    for (const b of bytes) if (b < limit && c.length < 4) c += CODE_ALPHABET[b % CODE_ALPHABET.length];
+  }
   return c;
 }
 
