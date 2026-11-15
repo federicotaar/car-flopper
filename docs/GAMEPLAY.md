@@ -4,7 +4,7 @@ Car Flopper è un co-op da garage: fino a 4 giocatori in una stanza riparano la 
 
 ## Le auto
 
-Tre auto da sbloccare in sequenza, ognuna con colore, tagline e set di pezzi propri:
+Tre auto da sbloccare in sequenza, ognuna con colore, tagline e carrozzeria propri (spoiler compreso); il set di pezzi da riparare e' lo stesso per tutte e tre:
 
 1. **Rusty Coupe**
 2. **Sideways 500**
