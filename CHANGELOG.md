@@ -2,6 +2,10 @@
 
 Le tappe principali di Car Flopper, dalle più recenti. Le versioni scaricabili sono nella tab Releases.
 
+## 2026-11-15
+
+- Test della stanza: kick dei client inattivi oltre 10 minuti e rifiuto (409) di una seconda prenotazione dello stesso codice.
+
 ## 2026-11-14
 
 - Server: codici stanza generati senza bias di modulo (rejection sampling).
