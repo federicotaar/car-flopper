@@ -183,4 +183,18 @@ console.log("repair guards OK");
   console.log("claim conflict OK");
 }
 
+// room codes: 4 chars, alphabet only (no ambiguous I/L/O/0/1), and the
+// rejection sampling actually draws from the whole alphabet over many codes
+{
+  const seen = new Set();
+  for (let i = 0; i < 4000; i++) {
+    const c = makeCode();
+    if (!/^[A-Z2-9]{4}$/.test(c)) throw new Error("bad code shape: " + c);
+    if (/[ILO01]/.test(c)) throw new Error("ambiguous char in code: " + c);
+    for (const ch of c) seen.add(ch);
+  }
+  if (seen.size !== 31) throw new Error("alphabet not fully used: " + seen.size + "/31");
+  console.log("room code shape OK");
+}
+
 console.log("ALL ROOM LOGIC TESTS PASSED");
