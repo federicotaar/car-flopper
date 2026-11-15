@@ -164,4 +164,23 @@ console.log("repair guards OK");
   if (seen.size < 150) throw new Error("room codes suspiciously repetitive: " + seen.size + "/200");
   console.log("makeCode charset OK");
 }
+// idle kick: a socket silent for more than IDLE_KICK_MS is closed and removed
+{
+  const e = joinDirect("elena");
+  e.player.lastSeen = Date.now() - 11 * 60 * 1000; // 11 min of silence
+  room.tick(Date.now());
+  if (room.players.has(e.server)) throw new Error("idle player not kicked");
+  console.log("idle kick OK");
+}
+
+// claim conflict: the room reclaimed earlier is still claimed, so a second
+// claim must be refused with 409
+{
+  if (!room.claimed) throw new Error("test setup: room should still be claimed here");
+  const again = await room.fetch(new Request("https://do/claim?code=DUP1", { method: "POST" }));
+  if (again.status !== 409) throw new Error("second claim not refused: " + again.status);
+  if (room.code !== "NEW2") throw new Error("conflicting claim overwrote the room code");
+  console.log("claim conflict OK");
+}
+
 console.log("ALL ROOM LOGIC TESTS PASSED");
