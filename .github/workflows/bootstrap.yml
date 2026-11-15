@@ -1,3 +1,7 @@
+# One-time source bootstrap: unpacks the game source tarball committed to the
+# # repo into Sources/. Runs on every push but exits early and cheap once the
+# # sources are unpacked, so it is safe to leave enabled.
+
 name: Bootstrap sources
 on:
   push:
