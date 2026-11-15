@@ -1,3 +1,7 @@
+# Manual regression run for the repair loop on the iOS simulator. Dispatch only,
+# # serialized through the repair-test concurrency group so two runs never
+# # overlap.
+
 name: Repair loop regression (sim)
 
 on:
