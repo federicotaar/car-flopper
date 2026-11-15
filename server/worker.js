@@ -278,7 +278,7 @@ export class GarageRoom {
       carIndex: this.carIndex,
       hostId: this.hostId || "",
       // strip server-side bookkeeping (lastSeen/lastPosAt); the iOS decoder only reads the public fields
-    players: [...this.players.values()].map(({ lastSeen, lastPosAt, ...p }) => p),
+      players: [...this.players.values()].map(({ lastSeen, lastPosAt, ...p }) => p),
       parts: this.parts,
     };
   }
