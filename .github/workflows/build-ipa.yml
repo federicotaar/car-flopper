@@ -1,3 +1,7 @@
+# Builds the unsigned Car Flopper IPA. Push-triggered, but deliberately ignores
+# # docs, the server, assets and .github so documentation and server commits
+# # never produce a build or a release.
+
 name: Build unsigned IPA
 
 on:
