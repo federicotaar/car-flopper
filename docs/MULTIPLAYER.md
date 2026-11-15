@@ -6,7 +6,7 @@ Il multiplayer di Car Flopper è interamente dentro `server/` (Cloudflare Worker
 
 1. **Crea garage**: il client chiama `POST /rooms`, il Worker genera un codice da 4 lettere (alfabeto senza I/L/O/0/1 per evitare confusione) e riserva la stanza.
 2. **Entra**: `GET /rooms/:code/ws` con il nickname come query param. Massimo 4 giocatori; il server rifiuta con `room full` oltre.
-3. **Gioca**: ogni client manda la propria posizione (~12 Hz, il server accetta al massimo 25 Hz) e gli eventi di riparazione. Il Durable Object della stanza trasmette uno snapshot completo ogni 500 ms.
+3. **Gioca**: ogni client manda la propria posizione (~12 Hz, il server accetta al massimo 25 Hz) e gli eventi di riparazione. Il Durable Object della stanza trasmette uno snapshot completo ogni 500 ms. Un client che non manda nulla per 10 minuti viene espulso (kick per inattivita'), cosi' un socket morto non puo' tenere una stanza occupata per sempre.
 4. **Fine**: l'host avanza all'auto successiva; dopo la terza la stanza è `finished`.
 
 ## Perché un Durable Object per stanza
