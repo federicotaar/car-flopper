@@ -197,4 +197,20 @@ console.log("repair guards OK");
   console.log("room code shape OK");
 }
 
+// car pick: only the host picks, only in the lobby, only a real car index
+room.phase = "lobby";
+room.carIndex = 0;
+const host = [...room.players.entries()].find(([, p]) => p.id === room.hostId);
+if (!host) throw new Error("no host for pick tests");
+const late = joinDirect("laura");
+room.onMessage(late.server, late.player, { t: "pick", car: 2 });
+if (room.carIndex !== 0) throw new Error("non-host picked a car!");
+room.onMessage(host[0], host[1], { t: "pick", car: 9 });
+if (room.carIndex !== 0) throw new Error("out-of-range pick accepted!");
+room.onMessage(host[0], host[1], { t: "pick", car: "junk" });
+if (room.carIndex !== 0) throw new Error("non-numeric pick accepted!");
+room.onMessage(host[0], host[1], { t: "pick", car: 2 });
+if (room.carIndex !== 2) throw new Error("host pick ignored");
+console.log("car pick guards OK");
+
 console.log("ALL ROOM LOGIC TESTS PASSED");
