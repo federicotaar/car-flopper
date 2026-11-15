@@ -4,6 +4,8 @@ Le tappe principali di Car Flopper, dalle più recenti. Le versioni scaricabili 
 
 ## 2026-11-15
 
+- Il test di logica della stanza ora verifica anche la forma dei codici stanza: 4 caratteri, niente caratteri ambigui (I/L/O/0/1) e uso dell'intero alfabeto su migliaia di estrazioni (il campionamento con reiezione non favorisce le prime lettere).
+
 - Test della stanza: kick dei client inattivi oltre 10 minuti e rifiuto (409) di una seconda prenotazione dello stesso codice.
 
 ## 2026-11-14
