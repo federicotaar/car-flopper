@@ -228,3 +228,5 @@ console.log("ALL ROOM LOGIC TESTS PASSED");
 {room.onMessage(host[0],host[1],{t:'repair',part:'__proto__',on:true});if(host[1].repairing!==null)throw Error('prototype part accepted');}
 
 {const snap=room.roomSnapshot();if(snap.players.some(p=>'lastSeen' in p||'lastPosAt' in p))throw Error('bookkeeping leaked');}
+
+{for(const [ws,pl] of [...room.players])room.onClose(ws,pl);room.phase='finished';room.carIndex=2;room.parts={old:{progress:1}};const response=await room.fetch(new Request('https://do/claim?code=FRESH',{method:'POST'}));if(response.status!==200||room.phase!=='lobby'||room.carIndex!==0||Object.keys(room.parts).length||room.colorPool.length!==4)throw Error('reclaim retained stale game');}
