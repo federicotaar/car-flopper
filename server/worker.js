@@ -157,6 +157,7 @@ export class GarageRoom {
         }
         let msg;
         try { msg = JSON.parse(ev.data); } catch { return; }
+        if(!msg||typeof msg!=='object'||Array.isArray(msg))return;
         player.lastSeen = Date.now();
         if (msg.t === "pos") {
           if (player.lastSeen - player.lastPosAt < MIN_POS_GAP_MS) return; // drop excess
