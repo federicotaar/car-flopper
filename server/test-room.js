@@ -216,3 +216,5 @@ console.log("car pick guards OK");
 console.log("ALL ROOM LOGIC TESTS PASSED");
 
 {for(const bad of [null,undefined,42,'x',[],true])room.onMessage(host[0],host[1],bad);if(room.carIndex!==2)throw Error('malformed message changed state');}
+
+{for(const bad of [1.5,null,'1',true,NaN,Infinity,-1]){room.onMessage(host[0],host[1],{t:'pick',car:bad});if(room.carIndex!==2)throw Error('invalid car pick accepted');}}
