@@ -214,3 +214,5 @@ if (room.carIndex !== 2) throw new Error("host pick ignored");
 console.log("car pick guards OK");
 
 console.log("ALL ROOM LOGIC TESTS PASSED");
+
+{for(const bad of [null,undefined,42,'x',[],true])room.onMessage(host[0],host[1],bad);if(room.carIndex!==2)throw Error('malformed message changed state');}
