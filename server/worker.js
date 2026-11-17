@@ -189,8 +189,8 @@ export class GarageRoom {
       this.phase = "play";
       this.broadcastState();
     } else if (msg.t === "pick" && player.id === this.hostId && this.phase === "lobby") {
-      const i = Math.trunc(Number(msg.car));
-      if (i >= 0 && i < CAR_COUNT) { this.carIndex = i; this.broadcastState(); }
+      const i=msg.car;
+      if (Number.isInteger(i) && i >= 0 && i < CAR_COUNT) { this.carIndex = i; this.broadcastState(); }
     } else if (msg.t === "next" && player.id === this.hostId && this.phase === "complete") {
       if (this.carIndex + 1 < CAR_COUNT) {
         this.carIndex += 1;
