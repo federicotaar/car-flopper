@@ -247,7 +247,7 @@ export class GarageRoom {
       // Measure the real elapsed time instead of assuming one tick = TICK_MS:
       // setInterval drifts when the isolate is busy and a fixed dt would slow
       // repairs down. Capped at 1s so a stalled room does not jump ahead.
-      const dt = this.lastTickAt ? Math.min((now - this.lastTickAt) / 1000, 1) : TICK_MS / 1000;
+      const dt = this.lastTickAt ? Math.max(0,Math.min((now - this.lastTickAt) / 1000, 1)) : TICK_MS / 1000;
       let allFixed = true;
       for (const def of PARTS) {
         const st = this.parts[def.id];
