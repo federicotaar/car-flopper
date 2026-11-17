@@ -226,3 +226,5 @@ console.log("ALL ROOM LOGIC TESTS PASSED");
 {room.phase='lobby';room.onMessage(host[0],host[1],{t:'repair',part:'engine',on:true});if(host[1].repairing!==null)throw Error('lobby repair accepted');room.phase='play';room.onMessage(host[0],host[1],{t:'repair',part:'engine',on:'false'});if(host[1].repairing!==null)throw Error('truthy string repair accepted');}
 
 {room.onMessage(host[0],host[1],{t:'repair',part:'__proto__',on:true});if(host[1].repairing!==null)throw Error('prototype part accepted');}
+
+{const snap=room.roomSnapshot();if(snap.players.some(p=>'lastSeen' in p||'lastPosAt' in p))throw Error('bookkeeping leaked');}
