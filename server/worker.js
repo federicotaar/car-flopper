@@ -175,6 +175,7 @@ export class GarageRoom {
   }
 
   onMessage(ws, player, msg) {
+    if(!this.players.has(ws)||!msg||typeof msg!=='object'||Array.isArray(msg))return;
     if (msg.t === "pos") {
       player.x = clampNum(msg.x, -7.4, 7.4);
       player.z = clampNum(msg.z, -5.4, 5.4);
