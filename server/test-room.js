@@ -224,3 +224,5 @@ console.log("ALL ROOM LOGIC TESTS PASSED");
 {room.phase='play';room.initCar();room.onMessage(host[0],host[1],{t:'repair',part:'engine',on:true});room.tick(10000);const progress=room.parts.engine.progress;room.tick(9000);if(room.parts.engine.progress!==progress)throw Error('clock rollback undid repairs');}
 
 {room.phase='lobby';room.onMessage(host[0],host[1],{t:'repair',part:'engine',on:true});if(host[1].repairing!==null)throw Error('lobby repair accepted');room.phase='play';room.onMessage(host[0],host[1],{t:'repair',part:'engine',on:'false'});if(host[1].repairing!==null)throw Error('truthy string repair accepted');}
+
+{room.onMessage(host[0],host[1],{t:'repair',part:'__proto__',on:true});if(host[1].repairing!==null)throw Error('prototype part accepted');}
