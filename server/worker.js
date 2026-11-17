@@ -185,7 +185,7 @@ export class GarageRoom {
       player.moving = !!msg.moving;
     } else if (msg.t === "repair") {
       const partId = typeof msg.part === "string" ? msg.part : null;
-      player.repairing = msg.on && partId && this.parts[partId] && this.parts[partId].progress < 1 ? partId : null;
+      player.repairing = this.phase==='play' && msg.on===true && partId && Object.hasOwn(this.parts,partId) && this.parts[partId] && this.parts[partId].progress < 1 ? partId : null;
     } else if (msg.t === "start" && player.id === this.hostId && this.phase === "lobby") {
       this.initCar();
       this.phase = "play";
