@@ -121,6 +121,8 @@ export class GarageRoom {
     if (url.pathname === "/claim") {
       if (this.claimed) return new Response("taken", { status: 409 });
       this.claimed = true;
+      this.phase='lobby';this.carIndex=0;this.hostId=null;this.parts={};
+      this.colorPool=[0,1,2,3];this.tickCount=0;this.lastTickAt=0;
       this.code = url.searchParams.get("code") || "";
       return new Response("ok");
     }
