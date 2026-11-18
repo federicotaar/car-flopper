@@ -178,7 +178,15 @@ export class GarageRoom {
 
   onMessage(ws, player, msg) {
     if(!this.players.has(ws)||!msg||typeof msg!=='object'||Array.isArray(msg))return;
-    if (msg.t === "pos") {
+    if (msg.t === "ping") {
+      // Optional heartbeat: old clients can keep sending positions unchanged.
+      // Bound echoed data and never relay arbitrary payloads to other players.
+      player.lastSeen = Date.now();
+      const response = { t: "pong", serverTime: player.lastSeen };
+      if (typeof msg.nonce === "string" && msg.nonce.length <= 64) response.nonce = msg.nonce;
+      else if (typeof msg.nonce === "number" && Number.isFinite(msg.nonce)) response.nonce = msg.nonce;
+      try { ws.send(JSON.stringify(response)); } catch { /* close handler cleans up */ }
+    } else if (msg.t === "pos") {
       player.x = clampNum(msg.x, -7.4, 7.4);
       player.z = clampNum(msg.z, -5.4, 5.4);
       player.ry = clampNum(msg.ry, -7, 7);
