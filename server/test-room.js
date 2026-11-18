@@ -96,10 +96,10 @@ const snap = room.roomSnapshot();
 for (const k of ["code","phase","carIndex","hostId","players","parts"]) if (!(k in snap)) throw new Error("snapshot missing " + k);
 console.log("snapshot shape OK:", JSON.stringify({code: snap.code, players: snap.players.length}));
 
-// pos clamping: out-of-range coords land on the bounds, junk becomes 0
-room.onMessage(a.server, a.player, { t: "pos", x: 999, z: -999, ry: "junk", moving: 1 });
+// Valid numeric positions clamp at the bounds. Invalid packets are tested below.
+room.onMessage(a.server, a.player, { t: "pos", x: 999, z: -999, ry: 0, moving: true });
 if (a.player.x !== 7.4 || a.player.z !== -5.4 || a.player.ry !== 0) throw new Error("pos not clamped");
-if (a.player.moving !== true) throw new Error("moving not coerced");
+if (a.player.moving !== true) throw new Error("valid moving flag not applied");
 console.log("pos clamping OK");
 
 // host migration: when the host leaves, the oldest remaining player becomes host
@@ -230,3 +230,28 @@ console.log("ALL ROOM LOGIC TESTS PASSED");
 {const snap=room.roomSnapshot();if(snap.players.some(p=>'lastSeen' in p||'lastPosAt' in p))throw Error('bookkeeping leaked');}
 
 {for(const [ws,pl] of [...room.players])room.onClose(ws,pl);room.phase='finished';room.carIndex=2;room.parts={old:{progress:1}};const response=await room.fetch(new Request('https://do/claim?code=FRESH',{method:'POST'}));if(response.status!==200||room.phase!=='lobby'||room.carIndex!==0||Object.keys(room.parts).length||room.colorPool.length!==4)throw Error('reclaim retained stale game');}
+
+// Optional heartbeat replies go only to the sender and do not change game state.
+{
+  const r = new GarageRoom(null, null);
+  const ws = new FakeWS();
+  const peer = new FakeWS();
+  const player = {id:"heartbeat", x:2,z:3,ry:1,moving:false,lastSeen:1};
+  r.players.set(ws, player);
+  r.players.set(peer, {id:"peer"});
+  for (const nonce of ["probe", 42, "x".repeat(64)]) {
+    r.onMessage(ws,player,{t:"ping",nonce});
+    const response=ws.out.at(-1);
+    if(response.t!=="pong"||response.nonce!==nonce||!Number.isFinite(response.serverTime))throw Error("bad heartbeat");
+  }
+  for(const nonce of ["x".repeat(65),{},null,Infinity]){
+    r.onMessage(ws,player,{t:"ping",nonce});
+    if("nonce" in ws.out.at(-1))throw Error("unsafe heartbeat echo");
+  }
+  if(peer.out.length||r.phase!=="lobby"||player.lastSeen<=1)throw Error("heartbeat leaked or mutated phase");
+  r.players.delete(ws);
+  const count=ws.out.length;
+  r.onMessage(ws,player,{t:"ping"});
+  if(ws.out.length!==count)throw Error("departed player heartbeat");
+}
+console.log("HEARTBEAT TESTS PASS");
