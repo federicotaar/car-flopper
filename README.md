@@ -82,3 +82,19 @@ Works: room lobbies with codes, 3D walking, real-time co-op repairs, car unlocki
 ---
 
 _Car Flopper is not affiliated with any automaker. Cars are original low-poly models drawn in code._
+
+
+## Optional WebSocket heartbeat
+
+Clients may send `{"t":"ping","nonce":"probe-1"}` to keep an otherwise idle
+connection alive. The sender receives `{"t":"pong","serverTime":1234567890,
+"nonce":"probe-1"}`. `serverTime` is Unix milliseconds. Nonces are optional:
+strings up to 64 characters and finite JSON numbers are echoed; other values
+are omitted. Heartbeats are not broadcast and do not change game progress.
+Existing position-sending clients need no changes. The normal message-size
+limit and idle timeout still apply. This is protocol source, not evidence of
+a deployed Worker version.
+
+Movement packets require finite numeric `x`, `z`, and `ry` values together.
+Malformed packets are ignored without changing any of the previous position.
+Valid coordinates are bounded to the garage and only JSON `true` sets moving.
