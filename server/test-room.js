@@ -255,3 +255,18 @@ console.log("ALL ROOM LOGIC TESTS PASSED");
   if(ws.out.length!==count)throw Error("departed player heartbeat");
 }
 console.log("HEARTBEAT TESTS PASS");
+
+
+// Malformed movement is ignored as one packet, keeping the last good state.
+{
+  const r=new GarageRoom(null,null), ws=new FakeWS();
+  const p={id:"movement",x:2,z:3,ry:1,moving:false};
+  r.players.set(ws,p);
+  for(const bad of [null,"4",true,Infinity,NaN,{},undefined]){
+    r.onMessage(ws,p,{t:"pos",x:4,z:bad,ry:2,moving:true});
+    if(p.x!==2||p.z!==3||p.ry!==1||p.moving)throw Error("partial malformed movement applied");
+  }
+  r.onMessage(ws,p,{t:"pos",x:999,z:-999,ry:999,moving:"false"});
+  if(p.x!==7.4||p.z!==-5.4||p.ry!==7||p.moving)throw Error("movement bounds or boolean guard");
+}
+console.log("MOVEMENT VALIDATION TESTS PASS");
