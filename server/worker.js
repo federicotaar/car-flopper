@@ -187,10 +187,12 @@ export class GarageRoom {
       else if (typeof msg.nonce === "number" && Number.isFinite(msg.nonce)) response.nonce = msg.nonce;
       try { ws.send(JSON.stringify(response)); } catch { /* close handler cleans up */ }
     } else if (msg.t === "pos") {
+      // Ignore malformed packets atomically rather than teleporting to zero.
+      if (![msg.x, msg.z, msg.ry].every(v => typeof v === "number" && Number.isFinite(v))) return;
       player.x = clampNum(msg.x, -7.4, 7.4);
       player.z = clampNum(msg.z, -5.4, 5.4);
       player.ry = clampNum(msg.ry, -7, 7);
-      player.moving = !!msg.moving;
+      player.moving = msg.moving === true;
     } else if (msg.t === "repair") {
       const partId = typeof msg.part === "string" ? msg.part : null;
       player.repairing = this.phase==='play' && msg.on===true && partId && Object.hasOwn(this.parts,partId) && this.parts[partId] && this.parts[partId].progress < 1 ? partId : null;
