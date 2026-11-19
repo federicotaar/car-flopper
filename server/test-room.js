@@ -223,6 +223,27 @@ console.log("car pick guards OK");
 }
 console.log("HEALTH ROUTE TESTS PASS");
 
+// finishing a part credits every fixer holding it
+{
+  const r = new GarageRoom(null, null);
+  const a = new FakeWS(), b = new FakeWS();
+  const pa = { id: "a", repairing: null, partsFixed: 0 };
+  const pb = { id: "b", repairing: null, partsFixed: 0 };
+  r.players.set(a, pa); r.players.set(b, pb);
+  r.phase = "play"; r.initCar();
+  r.onMessage(a, pa, { t: "repair", part: "engine", on: true });
+  r.onMessage(b, pb, { t: "repair", part: "engine", on: true });
+  for (let t = 1000; r.parts.engine.progress < 1 && t < 200000; t += 250) r.tick(t);
+  if (r.parts.engine.progress < 1) throw new Error("engine never finished with two fixers");
+  if (pa.partsFixed !== 1 || pb.partsFixed !== 1) throw new Error("fixers not credited");
+  if (pa.repairing !== null || pb.repairing !== null) throw new Error("repairing not cleared");
+  // the snapshot carries the public stat
+  const snap = r.roomSnapshot();
+  const sa = snap.players.find(p => p.id === "a");
+  if (sa.partsFixed !== 1) throw new Error("partsFixed missing from snapshot");
+}
+console.log("REPAIR CREDIT TESTS PASS");
+
 console.log("ALL ROOM LOGIC TESTS PASSED");
 
 {for(const bad of [null,undefined,42,'x',[],true])room.onMessage(host[0],host[1],bad);if(room.carIndex!==2)throw Error('malformed message changed state');}
