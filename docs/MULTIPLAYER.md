@@ -2,6 +2,13 @@
 
 Il multiplayer di Car Flopper è interamente dentro `server/` (Cloudflare Worker) e `Sources/CarFlopper/Net.swift` (client iOS). Piano gratuito Cloudflare, nessun account richiesto ai giocatori.
 
+## Server additions (2026-11-19)
+
+- `GET /health`: liveness probe, answers `{ ok: true, service: "car-flopper-api" }` without touching any room.
+- Lobby status (`GET /rooms/:code`) now also reports `carIndex`, `carsTotal` and `partsTotal` for preview UIs.
+- Players get a `partsFixed` counter in state snapshots: everyone holding a part when it finishes is credited.
+- State snapshots include `serverTime` so clients can estimate clock skew without a separate ping.
+
 ## Flusso
 
 1. **Crea garage**: il client chiama `POST /rooms`, il Worker genera un codice da 4 lettere (alfabeto senza I/L/O/0/1 per evitare confusione) e riserva la stanza.
