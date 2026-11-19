@@ -149,7 +149,7 @@ export class GarageRoom {
 
       const id = crypto.randomUUID().slice(0, 8);
       const color = this.colorPool.length ? this.colorPool.shift() : this.players.size % 4;
-      const player = { id, name, color, x: 0, z: 3.5, ry: 3.14, moving: false, repairing: null, lastSeen: Date.now(), lastPosAt: 0 };
+      const player = { id, name, color, x: 0, z: 3.5, ry: 3.14, moving: false, repairing: null, partsFixed: 0, lastSeen: Date.now(), lastPosAt: 0 };
       this.players.set(server, player);
       if (!this.hostId) this.hostId = id;
 
@@ -275,7 +275,8 @@ export class GarageRoom {
           st.progress = Math.min(1, st.progress + rate * dt * 1); // progress per second
           if (st.progress >= 1 && before < 1) {
             this.broadcast({ t: "event", kind: "partFixed", part: def.id });
-            for (const pl of this.players.values()) if (pl.repairing === def.id) pl.repairing = null;
+            // credit everyone holding this part when it finished: co-op stats
+            for (const pl of this.players.values()) if (pl.repairing === def.id) { pl.repairing = null; pl.partsFixed = (pl.partsFixed || 0) + 1; }
           }
         }
         if (st.progress < 1) allFixed = false;
