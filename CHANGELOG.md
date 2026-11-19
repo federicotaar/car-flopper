@@ -2,6 +2,14 @@
 
 Le tappe principali di Car Flopper, dalle più recenti. Le versioni scaricabili sono nella tab Releases.
 
+## 2026-11-19
+
+- Server multiplayer: route `GET /health` per il controllo di vitalità.
+- Server multiplayer: lo stato della lobby riporta i totali di auto e pezzi.
+- Server multiplayer: i giocatori ricevono credito (`partsFixed`) per i pezzi che aiutano a finire, visibile negli snapshot di stato.
+- Server multiplayer: gli snapshot di stato includono `serverTime` per stimare lo sfasamento dell'orologio del client.
+- Documentate le novità del server in `docs/MULTIPLAYER.md`.
+
 ## 2026-11-15
 
 - Docs: GAMEPLAY.md ora dice il vero sui set di pezzi - le tre auto condividono lo stesso set (cambiano colore, tagline e carrozzeria), verificato contro GameContent.swift.
