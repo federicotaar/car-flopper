@@ -213,6 +213,16 @@ room.onMessage(host[0], host[1], { t: "pick", car: 2 });
 if (room.carIndex !== 2) throw new Error("host pick ignored");
 console.log("car pick guards OK");
 
+// the worker answers /health without touching any room
+{
+  const r = await mod.default.fetch(new Request("https://api/health"), {});
+  if (r.status !== 200) throw new Error("health status " + r.status);
+  const body = await r.json();
+  if (body.ok !== true || body.service !== "car-flopper-api") throw new Error("bad health body");
+  if (r.headers.get("access-control-allow-origin") !== "*") throw new Error("health missing CORS");
+}
+console.log("HEALTH ROUTE TESTS PASS");
+
 console.log("ALL ROOM LOGIC TESTS PASSED");
 
 {for(const bad of [null,undefined,42,'x',[],true])room.onMessage(host[0],host[1],bad);if(room.carIndex!==2)throw Error('malformed message changed state');}
