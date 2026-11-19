@@ -255,6 +255,15 @@ console.log("REPAIR CREDIT TESTS PASS");
 }
 console.log("LOBBY STATUS TESTS PASS");
 
+// snapshots carry a fresh serverTime
+{
+  const r = new GarageRoom(null, null);
+  const before = Date.now();
+  const s = r.roomSnapshot();
+  if (!Number.isFinite(s.serverTime) || s.serverTime < before || s.serverTime > Date.now()) throw new Error("stale serverTime");
+}
+console.log("SNAPSHOT TIME TESTS PASS");
+
 console.log("ALL ROOM LOGIC TESTS PASSED");
 
 {for(const bad of [null,undefined,42,'x',[],true])room.onMessage(host[0],host[1],bad);if(room.carIndex!==2)throw Error('malformed message changed state');}
