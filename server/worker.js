@@ -64,6 +64,11 @@ export default {
     };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
 
+    if (url.pathname === "/health") {
+      // liveness probe for uptime checks; no Durable Object touched, always cheap
+      return Response.json({ ok: true, service: "car-flopper-api" }, { headers: cors });
+    }
+
     if (url.pathname === "/rooms" && request.method === "POST") {
       // retry a few times on the (rare) code collision
       for (let i = 0; i < 5; i++) {
