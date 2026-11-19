@@ -294,6 +294,8 @@ export class GarageRoom {
   roomSnapshot() {
     return {
       code: this.code || "",
+      // lets clients estimate clock skew without a separate ping (same value as pong)
+      serverTime: Date.now(),
       phase: this.phase,
       carIndex: this.carIndex,
       hostId: this.hostId || "",
