@@ -244,6 +244,17 @@ console.log("HEALTH ROUTE TESTS PASS");
 }
 console.log("REPAIR CREDIT TESTS PASS");
 
+// lobby status reports totals for the preview UI
+{
+  const r = new GarageRoom(null, null);
+  await r.fetch(new Request("https://do/claim?code=STAT", { method: "POST" }));
+  const resp = await r.fetch(new Request("https://do/status"));
+  if (resp.status !== 200) throw new Error("status " + resp.status);
+  const s = await resp.json();
+  if (s.carsTotal !== 3 || s.partsTotal !== 8 || s.carIndex !== 0 || s.phase !== "lobby") throw new Error("bad status body " + JSON.stringify(s));
+}
+console.log("LOBBY STATUS TESTS PASS");
+
 console.log("ALL ROOM LOGIC TESTS PASSED");
 
 {for(const bad of [null,undefined,42,'x',[],true])room.onMessage(host[0],host[1],bad);if(room.carIndex!==2)throw Error('malformed message changed state');}
