@@ -332,3 +332,11 @@ console.log("MOVEMENT VALIDATION TESTS PASS");
  const preflight=await mod.default.fetch(new Request('https://api/rooms',{method:'OPTIONS'}),env);
  if(preflight.status!==200||touched)throw Error('preflight touched room');
 }
+
+{
+ const r=new GarageRoom(null,null);
+ for(const [path,method] of [['/claim','GET'],['/status','POST'],['/ws','POST']]){
+  const resp=await r.fetch(new Request('https://do'+path,{method}));
+  if(resp.status!==405||r.claimed||r.players.size)throw Error('internal method guard failed');
+ }
+}
