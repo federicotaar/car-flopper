@@ -160,7 +160,7 @@ export class GarageRoom {
     if (url.pathname === "/status") {
       if (!this.claimed) return new Response("not found", { status: 404 });
       if (this.players.size >= MAX_PLAYERS) return new Response("full", { status: 409 });
-      return Response.json({ code: true, players: this.players.size, phase: this.phase, carIndex: this.carIndex, carsTotal: CAR_COUNT, partsTotal: PARTS.length });
+      return Response.json({ code: true, players: this.players.size, phase: this.phase, carIndex: this.carIndex, carsTotal: CAR_COUNT, partsTotal: PARTS.length, maxPlayers: MAX_PLAYERS, availableSlots: Math.max(0,MAX_PLAYERS-this.players.size) });
     }
 
     if (url.pathname === "/ws") {
