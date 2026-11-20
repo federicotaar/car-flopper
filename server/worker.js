@@ -328,7 +328,7 @@ export class GarageRoom {
         id:p.id,name:p.name,color:p.color,x:p.x,z:p.z,ry:p.ry,
         moving:p.moving,repairing:p.repairing,partsFixed:p.partsFixed || 0,
       })),
-      parts: this.parts,
+      parts: Object.fromEntries(Object.entries(this.parts).map(([id,p])=>[id,{progress:p.progress,fixers:p.fixers}])),
     };
   }
 
