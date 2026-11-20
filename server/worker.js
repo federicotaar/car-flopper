@@ -51,6 +51,12 @@ export function parsePacket(data) {
   } catch { return null; }
 }
 
+export function cleanPlayerName(value) {
+  if(typeof value !== 'string')return 'mechanic';
+  const cleaned=value.normalize('NFC').replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g,'').trim();
+  return Array.from(cleaned).slice(0,16).join('') || 'mechanic';
+}
+
 export function makeCode() {
   // rejection sampling: 256 % 31 != 0, so plain "byte % 31" would favor
   // the first few alphabet entries; redraw bytes >= limit instead
@@ -160,7 +166,7 @@ export class GarageRoom {
     if (url.pathname === "/ws") {
       if (!this.claimed) return new Response("not found", { status: 404 });
       if (this.players.size >= MAX_PLAYERS) return new Response("full", { status: 409 });
-      const name = (url.searchParams.get("name") || "mechanic").slice(0, 16);
+      const name = cleanPlayerName(url.searchParams.get("name"));
 
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
