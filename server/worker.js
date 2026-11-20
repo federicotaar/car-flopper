@@ -64,6 +64,11 @@ export default {
     };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
 
+    // Only room allocation mutates over HTTP. Unsupported methods must not
+    // reach the Durable Object or silently look like successful probes.
+    if (request.method !== 'GET' && !(url.pathname === '/rooms' && request.method === 'POST'))
+      return new Response('method not allowed', {status:405,headers:{...cors,Allow:'GET,POST,OPTIONS'}});
+
     if (url.pathname === "/health") {
       // liveness probe for uptime checks; no Durable Object touched, always cheap
       return Response.json({ ok: true, service: "car-flopper-api" }, { headers: cors });
