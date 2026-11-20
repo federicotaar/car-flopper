@@ -323,6 +323,11 @@ export class GarageRoom {
       phase: this.phase,
       carIndex: this.carIndex,
       hostId: this.hostId || "",
+      progress: {
+        fixed: PARTS.filter(p=>this.parts[p.id]?.progress>=1).length,
+        total: PARTS.length,
+        fraction: PARTS.reduce((n,p)=>n+Math.max(0,Math.min(1,this.parts[p.id]?.progress || 0)),0)/PARTS.length,
+      },
       // strip server-side bookkeeping (lastSeen/lastPosAt); the iOS decoder only reads the public fields
       players: [...this.players.values()].map(p => ({
         id:p.id,name:p.name,color:p.color,x:p.x,z:p.z,ry:p.ry,
