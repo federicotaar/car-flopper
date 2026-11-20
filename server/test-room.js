@@ -381,3 +381,13 @@ console.log("MOVEMENT VALIDATION TESTS PASS");
  const snap=r.roomSnapshot();snap.parts.engine.progress=1;snap.parts.engine.fixers=99;
  if(r.parts.engine.progress!==0||r.parts.engine.fixers!==0)throw Error('snapshot mutated authoritative room');
 }
+
+{
+ const r=new GarageRoom(null,null);
+ if(r.roomSnapshot().progress.fraction!==0)throw Error('empty car progress');
+ r.initCar();r.parts.engine.progress=1;r.parts.door.progress=0.5;
+ const p=r.roomSnapshot().progress;
+ if(p.total!==8||p.fixed!==1||p.fraction!==1.5/8)throw Error('partial repair aggregate');
+ for(const part of Object.values(r.parts))part.progress=1;
+ if(r.roomSnapshot().progress.fraction!==1||r.roomSnapshot().progress.fixed!==8)throw Error('completed repair aggregate');
+}
