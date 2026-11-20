@@ -41,6 +41,16 @@ const PARTS = [
 ];
 const CAR_COUNT = 3;
 
+// Count UTF-8 bytes, not UTF-16 code units, before parsing untrusted packets.
+export function parsePacket(data) {
+  if (typeof data !== 'string' || data.length > MAX_MSG_BYTES || new TextEncoder().encode(data).length > MAX_MSG_BYTES)
+    return null;
+  try {
+    const msg=JSON.parse(data);
+    return msg && typeof msg==='object' && !Array.isArray(msg) ? msg : null;
+  } catch { return null; }
+}
+
 export function makeCode() {
   // rejection sampling: 256 % 31 != 0, so plain "byte % 31" would favor
   // the first few alphabet entries; redraw bytes >= limit instead
@@ -167,13 +177,12 @@ export class GarageRoom {
       this.ensureTimer();
 
       server.addEventListener("message", (ev) => {
-        if (typeof ev.data !== "string" || ev.data.length > MAX_MSG_BYTES) {
+        if (typeof ev.data !== 'string' || ev.data.length > MAX_MSG_BYTES || new TextEncoder().encode(ev.data).length > MAX_MSG_BYTES) {
           try { server.close(1009, "message too big"); } catch {}
           return;
         }
-        let msg;
-        try { msg = JSON.parse(ev.data); } catch { return; }
-        if(!msg||typeof msg!=='object'||Array.isArray(msg))return;
+        const msg=parsePacket(ev.data);
+        if(!msg)return;
         player.lastSeen = Date.now();
         if (msg.t === "pos") {
           if (player.lastSeen - player.lastPosAt < MIN_POS_GAP_MS) return; // drop excess
