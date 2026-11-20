@@ -350,3 +350,11 @@ console.log("MOVEMENT VALIDATION TESTS PASS");
  if(parsePacket(boundary+' ')!==null)throw Error('oversized ASCII packet accepted');
  if(parsePacket('{"t":"ping"}').t!=='ping')throw Error('valid packet rejected');
 }
+
+{
+ const {cleanPlayerName}=mod;
+ if(cleanPlayerName('  fred\n\u202e  ')!=='fred')throw Error('control characters in name');
+ if(cleanPlayerName('🙂'.repeat(20))!=='🙂'.repeat(16))throw Error('emoji split in name');
+ if(cleanPlayerName('e\u0301')!=='é')throw Error('name NFC normalization');
+ for(const value of [null,{},'  ','\n'])if(cleanPlayerName(value)!=='mechanic')throw Error('name fallback');
+}
