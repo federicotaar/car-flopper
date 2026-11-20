@@ -368,3 +368,10 @@ console.log("MOVEMENT VALIDATION TESTS PASS");
  status=await (await r.fetch(new Request('https://do/status'))).json();
  if(status.players!==1||status.availableSlots!==3)throw Error('occupied lobby capacity');
 }
+
+{
+ const r=new GarageRoom(null,null), ws=new FakeWS();
+ r.players.set(ws,{id:'private',name:'fred',lastSeen:123,lastPosAt:42,futureSecret:'not public',partsFixed:2});
+ const p=r.roomSnapshot().players[0];
+ if(p.id!=='private'||p.partsFixed!==2||'futureSecret' in p||'lastSeen' in p||'lastPosAt' in p)throw Error('snapshot field allowlist failed');
+}
