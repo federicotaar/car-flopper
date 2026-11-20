@@ -321,3 +321,14 @@ console.log("HEARTBEAT TESTS PASS");
   if(p.x!==7.4||p.z!==-5.4||p.ry!==7||p.moving)throw Error("movement bounds or boolean guard");
 }
 console.log("MOVEMENT VALIDATION TESTS PASS");
+
+{
+ let touched=false;
+ const env={GARAGE_ROOM:{idFromName(){touched=true;throw Error('must not touch room');}}};
+ for(const [path,method] of [['/health','POST'],['/rooms/TEST','DELETE'],['/rooms/TEST/ws','POST']]){
+  const r=await mod.default.fetch(new Request('https://api'+path,{method}),env);
+  if(r.status!==405||!r.headers.get('allow')||touched)throw Error('worker method guard failed');
+ }
+ const preflight=await mod.default.fetch(new Request('https://api/rooms',{method:'OPTIONS'}),env);
+ if(preflight.status!==200||touched)throw Error('preflight touched room');
+}
