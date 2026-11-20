@@ -128,6 +128,10 @@ export class GarageRoom {
   async fetch(request) {
     const url = new URL(request.url);
 
+    const allowed = url.pathname === '/claim' ? 'POST' : 'GET';
+    if (request.method !== allowed)
+      return new Response('method not allowed',{status:405,headers:{Allow:allowed}});
+
     if (url.pathname === "/claim") {
       if (this.claimed) return new Response("taken", { status: 409 });
       this.claimed = true;
