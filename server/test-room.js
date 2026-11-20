@@ -340,3 +340,13 @@ console.log("MOVEMENT VALIDATION TESTS PASS");
   if(resp.status!==405||r.claimed||r.players.size)throw Error('internal method guard failed');
  }
 }
+
+{
+ const {parsePacket}=mod;
+ for(const raw of [null,'{','null','[]','42','true',JSON.stringify({text:'🙂'.repeat(1100)})])
+  if(parsePacket(raw)!==null)throw Error('invalid or oversized packet accepted');
+ const boundary=JSON.stringify({text:'x'.repeat(4085)});
+ if(new TextEncoder().encode(boundary).length!==4096||!parsePacket(boundary))throw Error('exact packet byte boundary');
+ if(parsePacket(boundary+' ')!==null)throw Error('oversized ASCII packet accepted');
+ if(parsePacket('{"t":"ping"}').t!=='ping')throw Error('valid packet rejected');
+}
