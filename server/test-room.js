@@ -375,3 +375,9 @@ console.log("MOVEMENT VALIDATION TESTS PASS");
  const p=r.roomSnapshot().players[0];
  if(p.id!=='private'||p.partsFixed!==2||'futureSecret' in p||'lastSeen' in p||'lastPosAt' in p)throw Error('snapshot field allowlist failed');
 }
+
+{
+ const r=new GarageRoom(null,null);r.initCar();
+ const snap=r.roomSnapshot();snap.parts.engine.progress=1;snap.parts.engine.fixers=99;
+ if(r.parts.engine.progress!==0||r.parts.engine.fixers!==0)throw Error('snapshot mutated authoritative room');
+}
