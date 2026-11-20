@@ -358,3 +358,13 @@ console.log("MOVEMENT VALIDATION TESTS PASS");
  if(cleanPlayerName('e\u0301')!=='é')throw Error('name NFC normalization');
  for(const value of [null,{},'  ','\n'])if(cleanPlayerName(value)!=='mechanic')throw Error('name fallback');
 }
+
+{
+ const r=new GarageRoom(null,null);
+ await r.fetch(new Request('https://do/claim?code=CAPA',{method:'POST'}));
+ let status=await (await r.fetch(new Request('https://do/status'))).json();
+ if(status.maxPlayers!==4||status.availableSlots!==4)throw Error('empty lobby capacity');
+ r.players.set(new FakeWS(),{id:'one'});
+ status=await (await r.fetch(new Request('https://do/status'))).json();
+ if(status.players!==1||status.availableSlots!==3)throw Error('occupied lobby capacity');
+}
