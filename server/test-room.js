@@ -520,3 +520,17 @@ function mkRoom(){
  if(st.hostName!=='Fred')throw Error('host name in status: '+st.hostName);
  if(new GarageRoom(null,null).hostName()!=='')throw Error('empty room has no host name');
 }
+
+{
+ const {room,join}=mkRoom();
+ const a=join('a'),b=join('b');
+ room.phase='finished';room.carIndex=2;room.carTimes=[1,2,3];a.player.partsFixed=5;b.player.ready=true;
+ room.onMessage(b.server,b.player,{t:'restart'});
+ if(room.phase!=='finished')throw Error('guest cannot restart');
+ room.onMessage(a.server,a.player,{t:'restart'});
+ if(room.phase!=='lobby'||room.carIndex!==0||room.carTimes.length!==0)throw Error('restart state');
+ if(a.player.partsFixed!==0||b.player.ready!==false)throw Error('restart clears per-player stats');
+ room.phase='play';
+ room.onMessage(a.server,a.player,{t:'restart'});
+ if(room.phase!=='play')throw Error('restart only from finished');
+}
