@@ -2,6 +2,13 @@
 
 Le tappe principali di Car Flopper, dalle più recenti. Le versioni scaricabili sono nella tab Releases.
 
+## 2026-11-24
+
+- Server multiplayer: l'host puo' espellere un giocatore in lobby (`kick`) e riavviare una stanza finita (`restart`).
+- Server multiplayer: emote da una lista fissa con pausa di un secondo, flag `ready` e `allReady`, cambio nome in lobby con nomi unici.
+- Server multiplayer: gli snapshot includono `elapsedMs`, `carTimes` e `etaSeconds` per pezzo; lo stato della lobby riporta `hostName`; `/health` riporta `time`.
+- Nuovi controlli in `server/test-room.js` per tutte le novita'.
+
 ## 2026-11-19
 
 - Server multiplayer: route `GET /health` per il controllo di vitalità.
