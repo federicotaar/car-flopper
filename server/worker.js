@@ -298,6 +298,11 @@ export class GarageRoom {
     }
   }
 
+  hostName() {
+    for (const pl of this.players.values()) if (pl.id === this.hostId) return pl.name;
+    return "";
+  }
+
   initCar() {
     this.parts = {};
     for (const p of PARTS) this.parts[p.id] = { progress: 0, fixers: 0 };
