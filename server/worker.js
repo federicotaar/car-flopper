@@ -59,6 +59,18 @@ export function cleanPlayerName(value) {
   return Array.from(cleaned).slice(0,16).join('') || 'mechanic';
 }
 
+// "mechanic" taken -> "mechanic 2", "mechanic 3"... always within the 16 character name limit.
+export function uniquePlayerName(name, taken) {
+  const used = new Set((Array.isArray(taken) ? taken : []).map(n => String(n).toLowerCase()));
+  if (!used.has(name.toLowerCase())) return name;
+  for (let n = 2; n < 100; n++) {
+    const suffix = ' ' + n;
+    const candidate = Array.from(name).slice(0, 16 - suffix.length).join('') + suffix;
+    if (!used.has(candidate.toLowerCase())) return candidate;
+  }
+  return name;
+}
+
 export function makeCode() {
   // rejection sampling: 256 % 31 != 0, so plain "byte % 31" would favor
   // the first few alphabet entries; redraw bytes >= limit instead
