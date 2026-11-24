@@ -420,3 +420,18 @@ function mkRoom(){
  room.onMessage(host.server,host.player,{t:'kick',id:guest.player.id});
  if(room.players.size!==2)throw Error('no kicking once the game started');
 }
+
+{
+ const {room,join}=mkRoom();
+ const a=join('a'),b=join('b');
+ const emotes=()=>b.server.out.filter(m=>m.t==='event'&&m.kind==='emote');
+ room.onMessage(a.server,a.player,{t:'emote',emote:'<script>'});
+ room.onMessage(a.server,a.player,{t:'emote',emote:42});
+ if(emotes().length!==0)throw Error('unknown emote relayed');
+ room.onMessage(a.server,a.player,{t:'emote',emote:'wave'});
+ room.onMessage(a.server,a.player,{t:'emote',emote:'gg'});
+ if(emotes().length!==1||emotes()[0].emote!=='wave'||emotes()[0].player!==a.player.id)throw Error('emote relay or cooldown');
+ a.player.lastEmoteAt-=2000;
+ room.onMessage(a.server,a.player,{t:'emote',emote:'gg'});
+ if(emotes().length!==2)throw Error('emote after cooldown');
+}
