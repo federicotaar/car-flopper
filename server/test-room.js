@@ -476,3 +476,24 @@ function mkRoom(){
  room.onMessage(a.server,a.player,{t:'rename',name:'late'});
  if(a.player.name!=='fred')throw Error('no rename during play');
 }
+
+{
+ const {room,join}=mkRoom();
+ const a=join('a');
+ if(room.roomSnapshot().elapsedMs!==0||room.roomSnapshot().carTimes.length!==0)throw Error('fresh room has no times');
+ room.onMessage(a.server,a.player,{t:'start'});
+ const started=room.startedAt;
+ if(!(started>0))throw Error('start records startedAt');
+ room.startedAt=Date.now()-5000;
+ const e=room.roomSnapshot().elapsedMs;
+ if(e<4900||e>7000)throw Error('elapsed ~5s, got '+e);
+ let now=Date.now();
+ for(const id of Object.keys(room.parts)){
+  room.onMessage(a.server,a.player,{t:'repair',part:id,on:true});
+  for(let i=0;i<80&&room.parts[id].progress<1;i++){now+=TICK_MS;room.tick(now);}
+ }
+ room.tick(now+TICK_MS);
+ if(room.phase!=='complete')throw Error('car should be complete');
+ if(!(room.carTimes[0]>0))throw Error('car time recorded');
+ if(room.roomSnapshot().elapsedMs!==0)throw Error('elapsed only counts while playing');
+}
