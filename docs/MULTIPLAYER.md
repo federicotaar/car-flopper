@@ -16,6 +16,10 @@ Il multiplayer di Car Flopper è interamente dentro `server/` (Cloudflare Worker
 3. **Gioca**: ogni client manda la propria posizione (~12 Hz, il server accetta al massimo 25 Hz) e gli eventi di riparazione. Il Durable Object della stanza trasmette uno snapshot completo ogni 500 ms. Un client che non manda nulla per 10 minuti viene espulso (kick per inattivita'), cosi' un socket morto non puo' tenere una stanza occupata per sempre.
 4. **Fine**: l'host avanza all'auto successiva; dopo la terza la stanza è `finished`.
 
+### Messaggio `kick`
+
+Solo l'host, solo in lobby: `{ "t": "kick", "id": "<id giocatore>" }` rimuove quel giocatore (riceve prima `error` con `reason: "kicked"`). L'host non può espellere se stesso e durante la partita il messaggio viene ignorato.
+
 ## Perché un Durable Object per stanza
 
 Lo stato della stanza (giocatori, progresso dei pezzi, fase) vive in un unico oggetto: il server è autoritativo sul progresso, quindi il bonus co-op è identico per tutti e due client non possono completare lo stesso pezzo due volte.
