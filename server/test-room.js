@@ -534,3 +534,14 @@ function mkRoom(){
  room.onMessage(a.server,a.player,{t:'restart'});
  if(room.phase!=='play')throw Error('restart only from finished');
 }
+
+{
+ const worker=mod.default;
+ const res=await worker.fetch(new Request('https://x/health'),{});
+ const body=await res.json();
+ if(res.status!==200||body.ok!==true||body.service!=='car-flopper-api'||!Number.isFinite(body.time))throw Error('health shape');
+ const del=await worker.fetch(new Request('https://x/health',{method:'DELETE'}),{});
+ if(del.status!==405||!String(del.headers.get('allow')).includes('GET'))throw Error('405 with Allow');
+ const opt=await worker.fetch(new Request('https://x/rooms',{method:'OPTIONS'}),{});
+ if(opt.headers.get('access-control-allow-origin')!=='*')throw Error('CORS preflight');
+}
