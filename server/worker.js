@@ -101,7 +101,7 @@ export default {
 
     if (url.pathname === "/health") {
       // liveness probe for uptime checks; no Durable Object touched, always cheap
-      return Response.json({ ok: true, service: "car-flopper-api" }, { headers: cors });
+      return Response.json({ ok: true, service: "car-flopper-api", time: Date.now() }, { headers: cors });
     }
 
     if (url.pathname === "/rooms" && request.method === "POST") {
