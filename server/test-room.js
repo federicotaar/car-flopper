@@ -452,3 +452,13 @@ function mkRoom(){
  if(a.player.ready!==true)throw Error('ready only changes in the lobby');
  if(new GarageRoom(null,null).roomSnapshot().allReady!==false)throw Error('empty room is not ready');
 }
+
+{
+ const {uniquePlayerName}=mod;
+ if(uniquePlayerName('fred',[])!=='fred')throw Error('free name unchanged');
+ if(uniquePlayerName('fred',['FRED'])!=='fred 2')throw Error('case-insensitive clash');
+ if(uniquePlayerName('fred',['fred','fred 2'])!=='fred 3')throw Error('next free suffix');
+ const long=uniquePlayerName('abcdefghijklmnop',['abcdefghijklmnop']);
+ if(long!=='abcdefghijklmn 2'||Array.from(long).length>16)throw Error('suffix must fit 16 chars: '+long);
+ if(uniquePlayerName('x',null)!=='x')throw Error('bad taken list');
+}
