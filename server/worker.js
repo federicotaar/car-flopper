@@ -153,6 +153,8 @@ export class GarageRoom {
     this.tickCount = 0;
     this.lastTickAt = 0; // wall clock of the previous tick; 0 = no tick yet
     this.timer = null;
+    this.startedAt = 0; // wall clock when the current car started
+    this.carTimes = []; // ms each finished car took, by car index
   }
 
   async fetch(request) {
