@@ -347,6 +347,7 @@ export class GarageRoom {
       }
       if (allFixed && this.phase === "play") {
         this.phase = "complete";
+        if (this.startedAt) this.carTimes[this.carIndex] = Math.max(0, now - this.startedAt);
         this.broadcast({ t: "event", kind: "carComplete", car: String(this.carIndex) });
       }
     }
