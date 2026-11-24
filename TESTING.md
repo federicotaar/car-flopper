@@ -13,7 +13,7 @@ limiti del garage, migrazione dell'host quando esce, rilascio e riutilizzo
 del codice stanza all'ultima uscita, guardie sulle riparazioni (pezzo
 sconosciuto ignorato, fixer ricalcolati a ogni tick), guardie sulla scelta
 dell’auto (solo l’host, solo in lobby, solo un indice valido) e alfabeto
-senza ambiguità dei codici stanza. Non serve rete né wrangler (Node 22+).
+senza ambiguità dei codici stanza. Copre anche kick e restart solo per l'host, emote con lista fissa e pausa, ready/allReady, rename con nomi unici, `elapsedMs`/`carTimes`, `etaSeconds`, `hostName` e la risposta di `/health`. Non serve rete né wrangler (Node 22+).
 Verificato il 2026-11-14: tutti i controlli passano.
 
 ## Co-op live contro il deploy
