@@ -271,6 +271,11 @@ export class GarageRoom {
     } else if (msg.t === "pick" && player.id === this.hostId && this.phase === "lobby") {
       const i=msg.car;
       if (Number.isInteger(i) && i >= 0 && i < CAR_COUNT) { this.carIndex = i; this.broadcastState(); }
+    } else if (msg.t === "restart" && player.id === this.hostId && this.phase === "finished") {
+      // play again with the same people: back to car 0 in the lobby, fresh stats
+      this.phase = "lobby"; this.carIndex = 0; this.parts = {}; this.carTimes = []; this.startedAt = 0;
+      for (const pl of this.players.values()) { pl.partsFixed = 0; pl.ready = false; pl.repairing = null; }
+      this.broadcastState();
     } else if (msg.t === "next" && player.id === this.hostId && this.phase === "complete") {
       if (this.carIndex + 1 < CAR_COUNT) {
         this.carIndex += 1;
