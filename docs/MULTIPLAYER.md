@@ -20,6 +20,10 @@ Il multiplayer di Car Flopper è interamente dentro `server/` (Cloudflare Worker
 
 Solo l'host, solo in lobby: `{ "t": "kick", "id": "<id giocatore>" }` rimuove quel giocatore (riceve prima `error` con `reason: "kicked"`). L'host non può espellere se stesso e durante la partita il messaggio viene ignorato.
 
+### Messaggio `emote`
+
+`{ "t": "emote", "emote": "wave" }` con uno tra `wave`, `thumbs`, `wow`, `laugh`, `help`, `gg`. Il server inoltra a tutti `{ t: "event", kind: "emote", player, emote }`, al massimo uno al secondo per giocatore; testo libero non viene mai inoltrato.
+
 ## Perché un Durable Object per stanza
 
 Lo stato della stanza (giocatori, progresso dei pezzi, fase) vive in un unico oggetto: il server è autoritativo sul progresso, quindi il bonus co-op è identico per tutti e due client non possono completare lo stesso pezzo due volte.
