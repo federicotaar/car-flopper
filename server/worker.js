@@ -243,6 +243,10 @@ export class GarageRoom {
       if (now - (player.lastEmoteAt || 0) < EMOTE_GAP_MS) return;
       player.lastEmoteAt = now;
       this.broadcast({ t: "event", kind: "emote", player: player.id, emote: msg.emote });
+    } else if (msg.t === "rename" && this.phase === "lobby" && typeof msg.name === "string") {
+      const others = [...this.players.values()].filter(p => p !== player).map(p => p.name);
+      player.name = uniquePlayerName(cleanPlayerName(msg.name), others);
+      this.broadcastState();
     } else if (msg.t === "ready" && this.phase === "lobby") {
       player.ready = msg.on === true;
       this.broadcastState();
