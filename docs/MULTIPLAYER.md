@@ -30,6 +30,8 @@ In lobby ogni giocatore può mandare `{ "t": "ready", "on": true }`. Lo snapshot
 
 ### Tempi
 
+Ogni pezzo in `parts` ha anche `etaSeconds`: secondi rimasti con i riparatori attuali (bonus co-op incluso), `0` se finito, `null` se nessuno lo sta riparando.
+
 Lo snapshot include `elapsedMs` (millisecondi dall'inizio dell'auto in corso, 0 fuori dalla fase `play`) e `carTimes` (millisecondi impiegati per ogni auto finita, per indice).
 
 ## Perché un Durable Object per stanza
