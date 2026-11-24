@@ -231,6 +231,9 @@ export class GarageRoom {
       if (now - (player.lastEmoteAt || 0) < EMOTE_GAP_MS) return;
       player.lastEmoteAt = now;
       this.broadcast({ t: "event", kind: "emote", player: player.id, emote: msg.emote });
+    } else if (msg.t === "ready" && this.phase === "lobby") {
+      player.ready = msg.on === true;
+      this.broadcastState();
     } else if (msg.t === "repair") {
       const partId = typeof msg.part === "string" ? msg.part : null;
       player.repairing = this.phase==='play' && msg.on===true && partId && Object.hasOwn(this.parts,partId) && this.parts[partId] && this.parts[partId].progress < 1 ? partId : null;
