@@ -497,3 +497,17 @@ function mkRoom(){
  if(!(room.carTimes[0]>0))throw Error('car time recorded');
  if(room.roomSnapshot().elapsedMs!==0)throw Error('elapsed only counts while playing');
 }
+
+{
+ const r2=new GarageRoom(null,null);
+ r2.initCar();
+ let s=r2.roomSnapshot();
+ if(s.parts.engine.etaSeconds!==null)throw Error('no fixer: eta null');
+ r2.parts.engine.fixers=1;
+ if(r2.roomSnapshot().parts.engine.etaSeconds!==12)throw Error('one fixer: full 12s');
+ r2.parts.engine.fixers=2;r2.parts.engine.progress=0.5;
+ const eta=r2.roomSnapshot().parts.engine.etaSeconds;
+ if(Math.abs(eta-3.5)>0.11)throw Error('two fixers half done ~3.5s, got '+eta);
+ r2.parts.engine.progress=1;
+ if(r2.roomSnapshot().parts.engine.etaSeconds!==0)throw Error('done: 0');
+}
