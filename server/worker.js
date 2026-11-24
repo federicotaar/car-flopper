@@ -229,6 +229,15 @@ export class GarageRoom {
       this.initCar();
       this.phase = "play";
       this.broadcastState();
+    } else if (msg.t === "kick" && player.id === this.hostId && this.phase === "lobby" && typeof msg.id === "string" && msg.id !== player.id) {
+      // host-only moderation: drop one player from the lobby, never the host itself
+      for (const [sock, pl] of this.players) {
+        if (pl.id !== msg.id) continue;
+        try { sock.send(JSON.stringify({ t: "error", reason: "kicked" })); } catch { /* already gone */ }
+        try { sock.close(4000, "kicked"); } catch { /* close handler cleans up */ }
+        this.onClose(sock, pl);
+        break;
+      }
     } else if (msg.t === "pick" && player.id === this.hostId && this.phase === "lobby") {
       const i=msg.car;
       if (Number.isInteger(i) && i >= 0 && i < CAR_COUNT) { this.carIndex = i; this.broadcastState(); }
