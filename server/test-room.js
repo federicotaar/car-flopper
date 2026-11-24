@@ -435,3 +435,20 @@ function mkRoom(){
  room.onMessage(a.server,a.player,{t:'emote',emote:'gg'});
  if(emotes().length!==2)throw Error('emote after cooldown');
 }
+
+{
+ const {room,join}=mkRoom();
+ const a=join('a'),b=join('b');
+ if(room.roomSnapshot().allReady!==false)throw Error('nobody ready yet');
+ room.onMessage(a.server,a.player,{t:'ready',on:true});
+ if(room.roomSnapshot().allReady!==false)throw Error('only one ready');
+ room.onMessage(b.server,b.player,{t:'ready',on:true});
+ const s=room.roomSnapshot();
+ if(!s.allReady||!s.players.every(p=>p.ready===true))throw Error('everyone ready');
+ room.onMessage(b.server,b.player,{t:'ready',on:'yes'});
+ if(room.roomSnapshot().allReady!==false)throw Error('non-true on means not ready');
+ room.onMessage(a.server,a.player,{t:'start'});
+ room.onMessage(a.server,a.player,{t:'ready',on:false});
+ if(a.player.ready!==true)throw Error('ready only changes in the lobby');
+ if(new GarageRoom(null,null).roomSnapshot().allReady!==false)throw Error('empty room is not ready');
+}
