@@ -40,6 +40,8 @@ const PARTS = [
   { id: "exhaust", seconds: 8 },
 ];
 const CAR_COUNT = 3;
+export const EMOTES = ["wave", "thumbs", "wow", "laugh", "help", "gg"];
+const EMOTE_GAP_MS = 1000; // one emote per second per player
 
 // Count UTF-8 bytes, not UTF-16 code units, before parsing untrusted packets.
 export function parsePacket(data) {
