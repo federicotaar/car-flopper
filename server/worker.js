@@ -224,6 +224,13 @@ export class GarageRoom {
       player.z = clampNum(msg.z, -5.4, 5.4);
       player.ry = clampNum(msg.ry, -7, 7);
       player.moving = msg.moving === true;
+    } else if (msg.t === "emote") {
+      // fixed vocabulary only: never relay free text from one player to the others
+      const now = Date.now();
+      if (typeof msg.emote !== "string" || !EMOTES.includes(msg.emote)) return;
+      if (now - (player.lastEmoteAt || 0) < EMOTE_GAP_MS) return;
+      player.lastEmoteAt = now;
+      this.broadcast({ t: "event", kind: "emote", player: player.id, emote: msg.emote });
     } else if (msg.t === "repair") {
       const partId = typeof msg.part === "string" ? msg.part : null;
       player.repairing = this.phase==='play' && msg.on===true && partId && Object.hasOwn(this.parts,partId) && this.parts[partId] && this.parts[partId].progress < 1 ? partId : null;
