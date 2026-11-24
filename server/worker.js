@@ -391,6 +391,16 @@ export class GarageRoom {
   }
 }
 
+// Seconds left at the current number of fixers; null while nobody is repairing it.
+function partEta(id, state) {
+  const def = PARTS.find(p => p.id === id);
+  if (!def || !state) return null;
+  if (state.progress >= 1) return 0;
+  if (!(state.fixers > 0)) return null;
+  const rate = (1 + COOP_BONUS * (state.fixers - 1)) / def.seconds;
+  return Math.round((1 - state.progress) / rate * 10) / 10;
+}
+
 function clampNum(v, lo, hi) {
   const n = Number(v);
   if (!Number.isFinite(n)) return 0;
