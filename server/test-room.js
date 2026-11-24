@@ -391,3 +391,17 @@ console.log("MOVEMENT VALIDATION TESTS PASS");
  for(const part of Object.values(r.parts))part.progress=1;
  if(r.roomSnapshot().progress.fraction!==1||r.roomSnapshot().progress.fixed!==8)throw Error('completed repair aggregate');
 }
+
+// helper for the message-level tests below: a fresh room plus fake joiners
+function mkRoom(){
+ const room=new GarageRoom(null,null);
+ const join=(name)=>{
+  const server=new FakeWS();
+  const id=name+Math.random().toString(16).slice(2,6);
+  const player={id,name,color:room.colorPool.length?room.colorPool.shift():0,x:0,z:3.5,ry:3.14,moving:false,repairing:null,partsFixed:0,lastSeen:Date.now(),lastPosAt:0};
+  room.players.set(server,player);
+  if(!room.hostId)room.hostId=id;
+  return {server,player};
+ };
+ return {room,join};
+}
