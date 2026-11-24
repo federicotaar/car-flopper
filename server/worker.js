@@ -364,6 +364,8 @@ export class GarageRoom {
       phase: this.phase,
       carIndex: this.carIndex,
       hostId: this.hostId || "",
+      elapsedMs: this.phase === "play" && this.startedAt ? Math.max(0, Date.now() - this.startedAt) : 0,
+      carTimes: this.carTimes.slice(),
       progress: {
         fixed: PARTS.filter(p=>this.parts[p.id]?.progress>=1).length,
         total: PARTS.length,
