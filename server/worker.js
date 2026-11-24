@@ -301,6 +301,7 @@ export class GarageRoom {
     for (const p of PARTS) this.parts[p.id] = { progress: 0, fixers: 0 };
     for (const pl of this.players.values()) pl.repairing = null;
     this.lastTickAt = 0; // a fresh car starts with a clean clock
+    this.startedAt = Date.now();
   }
 
   ensureTimer() {
