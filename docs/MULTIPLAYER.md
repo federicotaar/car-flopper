@@ -34,6 +34,10 @@ Ogni pezzo in `parts` ha anche `etaSeconds`: secondi rimasti con i riparatori at
 
 Lo snapshot include `elapsedMs` (millisecondi dall'inizio dell'auto in corso, 0 fuori dalla fase `play`) e `carTimes` (millisecondi impiegati per ogni auto finita, per indice).
 
+### Messaggio `restart`
+
+Solo l'host, solo a stanza `finished`: `{ "t": "restart" }` riporta la stanza in lobby con l'auto 0 e azzera tempi, pezzi riparati per giocatore e flag `ready`.
+
 ## Perché un Durable Object per stanza
 
 Lo stato della stanza (giocatori, progresso dei pezzi, fase) vive in un unico oggetto: il server è autoritativo sul progresso, quindi il bonus co-op è identico per tutti e due client non possono completare lo stesso pezzo due volte.
