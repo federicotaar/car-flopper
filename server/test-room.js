@@ -462,3 +462,17 @@ function mkRoom(){
  if(long!=='abcdefghijklmn 2'||Array.from(long).length>16)throw Error('suffix must fit 16 chars: '+long);
  if(uniquePlayerName('x',null)!=='x')throw Error('bad taken list');
 }
+
+{
+ const {room,join}=mkRoom();
+ const a=join('fred'),b=join('simone');
+ room.onMessage(b.server,b.player,{t:'rename',name:'  Fred  '});
+ if(b.player.name!=='Fred 2')throw Error('rename must stay unique, got '+b.player.name);
+ room.onMessage(b.server,b.player,{t:'rename',name:'\u202egnidoc'});
+ if(b.player.name!=='gnidoc')throw Error('control characters stripped');
+ room.onMessage(b.server,b.player,{t:'rename',name:42});
+ if(b.player.name!=='gnidoc')throw Error('non-string rename ignored');
+ room.onMessage(a.server,a.player,{t:'start'});
+ room.onMessage(a.server,a.player,{t:'rename',name:'late'});
+ if(a.player.name!=='fred')throw Error('no rename during play');
+}
