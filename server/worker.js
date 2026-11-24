@@ -377,7 +377,7 @@ export class GarageRoom {
         moving:p.moving,repairing:p.repairing,partsFixed:p.partsFixed || 0,ready:p.ready === true,
       })),
       allReady: this.players.size > 0 && [...this.players.values()].every(p => p.ready === true),
-      parts: Object.fromEntries(Object.entries(this.parts).map(([id,p])=>[id,{progress:p.progress,fixers:p.fixers}])),
+      parts: Object.fromEntries(Object.entries(this.parts).map(([id,p])=>[id,{progress:p.progress,fixers:p.fixers,etaSeconds:partEta(id,p)}])),
     };
   }
 
