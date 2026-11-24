@@ -28,6 +28,10 @@ Solo l'host, solo in lobby: `{ "t": "kick", "id": "<id giocatore>" }` rimuove qu
 
 In lobby ogni giocatore può mandare `{ "t": "ready", "on": true }`. Lo snapshot riporta `ready` per giocatore e `allReady` per la stanza. Il server non blocca `start`: decide l'host.
 
+### Tempi
+
+Lo snapshot include `elapsedMs` (millisecondi dall'inizio dell'auto in corso, 0 fuori dalla fase `play`) e `carTimes` (millisecondi impiegati per ogni auto finita, per indice).
+
 ## Perché un Durable Object per stanza
 
 Lo stato della stanza (giocatori, progresso dei pezzi, fase) vive in un unico oggetto: il server è autoritativo sul progresso, quindi il bonus co-op è identico per tutti e due client non possono completare lo stesso pezzo due volte.
