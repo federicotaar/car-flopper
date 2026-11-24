@@ -511,3 +511,12 @@ function mkRoom(){
  r2.parts.engine.progress=1;
  if(r2.roomSnapshot().parts.engine.etaSeconds!==0)throw Error('done: 0');
 }
+
+{
+ const {room,join}=mkRoom();
+ await room.fetch(new Request('https://do/claim?code=ABCD',{method:'POST'}));
+ join('Fred');join('Simone');
+ const st=await (await room.fetch(new Request('https://do/status'))).json();
+ if(st.hostName!=='Fred')throw Error('host name in status: '+st.hostName);
+ if(new GarageRoom(null,null).hostName()!=='')throw Error('empty room has no host name');
+}
