@@ -405,3 +405,18 @@ function mkRoom(){
  };
  return {room,join};
 }
+
+{
+ const {room,join}=mkRoom();
+ const host=join('host'),guest=join('guest'),other=join('other');
+ room.onMessage(guest.server,guest.player,{t:'kick',id:other.player.id});
+ if(room.players.size!==3)throw Error('a guest must not kick');
+ room.onMessage(host.server,host.player,{t:'kick',id:host.player.id});
+ if(room.players.size!==3)throw Error('host cannot kick itself');
+ room.onMessage(host.server,host.player,{t:'kick',id:other.player.id});
+ if(room.players.size!==2||room.players.has(other.server))throw Error('host kick failed');
+ if(!other.server.out.some(m=>m.t==='error'&&m.reason==='kicked'))throw Error('kicked player not told');
+ room.onMessage(host.server,host.player,{t:'start'});
+ room.onMessage(host.server,host.player,{t:'kick',id:guest.player.id});
+ if(room.players.size!==2)throw Error('no kicking once the game started');
+}
