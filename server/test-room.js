@@ -545,3 +545,10 @@ function mkRoom(){
  const opt=await worker.fetch(new Request('https://x/rooms',{method:'OPTIONS'}),{});
  if(opt.headers.get('access-control-allow-origin')!=='*')throw Error('CORS preflight');
 }
+
+{
+ const {isRoomCode,makeCode:mk}=mod;
+ for(let i=0;i<50;i++)if(!isRoomCode(mk()))throw Error('generated codes are valid');
+ for(const bad of ['abcd','ABC','ABCDE','AB0D','ABID','ABLO','',null,undefined,1234])
+  if(isRoomCode(bad))throw Error('should reject '+String(bad));
+}
