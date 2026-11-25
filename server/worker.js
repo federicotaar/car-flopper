@@ -105,6 +105,12 @@ export function isEmote(value) {
   return typeof value === "string" && EMOTES.includes(value);
 }
 
+// Parts fixed per second for a part with the given solo seconds and number of fixers.
+// Each extra fixer adds COOP_BONUS of a solo mechanic.
+export function coopRate(soloSeconds, fixers) {
+  return (1 + COOP_BONUS * (Math.max(1, fixers) - 1)) / soloSeconds;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
