@@ -558,4 +558,10 @@ function mkRoom(){
  if(n(' ab-cd ')!=='ABCD')throw Error('case, space and dash');
  if(n('k7 m2')!=='K7M2')throw Error('inner space');
  if(n('ab0d')!==null||n(42)!==null||n('abc')!==null)throw Error('invalid stays null');
-     }
+}
+
+{
+ const {isEmote,EMOTES:E}=mod;
+ for(const e of E)if(!isEmote(e))throw Error('listed emote '+e);
+ if(isEmote('dance')||isEmote(null)||isEmote(['wave'])||isEmote('Wave'))throw Error('unlisted emote accepted');
+}
