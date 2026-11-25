@@ -594,3 +594,10 @@ function mkRoom(){
  if(partEta('wheelFL',{progress:0.2,fixers:0})!==null)throw Error('idle is null');
  if(partEta('nope',{progress:0,fixers:1})!==null||partEta('door',null)!==null)throw Error('unknown part or state');
 }
+
+{
+ const {clampNum}=mod;
+ if(clampNum(5,0,10)!==5||clampNum(-3,0,10)!==0||clampNum(99,0,10)!==10)throw Error('range');
+ if(clampNum('7',0,10)!==7)throw Error('numeric string');
+ if(clampNum(NaN,1,10)!==0||clampNum(Infinity,0,10)!==0||clampNum(undefined,0,10)!==0)throw Error('non finite becomes 0');
+     }
