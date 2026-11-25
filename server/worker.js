@@ -120,6 +120,11 @@ export function partIds() {
   return PARTS.map(p => p.id);
 }
 
+// Free seats in a room, never negative.
+export function slotsLeft(playerCount) {
+  return Math.max(0, MAX_PLAYERS - (Number(playerCount) || 0));
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -212,7 +217,7 @@ export class GarageRoom {
     if (url.pathname === "/status") {
       if (!this.claimed) return new Response("not found", { status: 404 });
       if (this.players.size >= MAX_PLAYERS) return new Response("full", { status: 409 });
-      return Response.json({ code: true, players: this.players.size, phase: this.phase, carIndex: this.carIndex, carsTotal: CAR_COUNT, partsTotal: PARTS.length, maxPlayers: MAX_PLAYERS, availableSlots: Math.max(0,MAX_PLAYERS-this.players.size), hostName: this.hostName() });
+      return Response.json({ code: true, players: this.players.size, phase: this.phase, carIndex: this.carIndex, carsTotal: CAR_COUNT, partsTotal: PARTS.length, maxPlayers: MAX_PLAYERS, availableSlots: slotsLeft(this.players.size), hostName: this.hostName() });
     }
 
     if (url.pathname === "/ws") {
