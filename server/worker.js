@@ -101,6 +101,10 @@ export function normalizeRoomCode(input) {
   return isRoomCode(code) ? code : null;
 }
 
+export function isEmote(value) {
+  return typeof value === "string" && EMOTES.includes(value);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -258,7 +262,7 @@ export class GarageRoom {
     } else if (msg.t === "emote") {
       // fixed vocabulary only: never relay free text from one player to the others
       const now = Date.now();
-      if (typeof msg.emote !== "string" || !EMOTES.includes(msg.emote)) return;
+      if (!isEmote(msg.emote)) return;
       if (now - (player.lastEmoteAt || 0) < EMOTE_GAP_MS) return;
       player.lastEmoteAt = now;
       this.broadcast({ t: "event", kind: "emote", player: player.id, emote: msg.emote });
