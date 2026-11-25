@@ -579,3 +579,9 @@ function mkRoom(){
  const t=mod.totalSoloSeconds();
  if(t!==66)throw Error('expected 66 solo seconds, got '+t);
 }
+
+{
+ const ids=mod.partIds();
+ if(ids.length!==8||new Set(ids).size!==8)throw Error('eight unique parts');
+ if(ids[0]!=='wheelFL'||ids[4]!=='engine')throw Error('order is kept');
+}
