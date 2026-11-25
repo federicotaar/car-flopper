@@ -565,3 +565,12 @@ function mkRoom(){
  for(const e of E)if(!isEmote(e))throw Error('listed emote '+e);
  if(isEmote('dance')||isEmote(null)||isEmote(['wave'])||isEmote('Wave'))throw Error('unlisted emote accepted');
 }
+
+{
+ const {coopRate:r}=mod;
+ const close=(a,b)=>Math.abs(a-b)<1e-9;
+ if(!close(r(10,1),0.1))throw Error('solo');
+ if(!close(r(10,2),0.17))throw Error('two fixers');
+ if(!close(r(10,4),0.31))throw Error('four fixers');
+ if(!close(r(10,0),0.1))throw Error('zero fixers counts as one');
+     }
