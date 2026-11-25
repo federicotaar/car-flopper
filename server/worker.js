@@ -116,6 +116,10 @@ export function totalSoloSeconds() {
   return PARTS.reduce((sum, p) => sum + p.seconds, 0);
 }
 
+export function partIds() {
+  return PARTS.map(p => p.id);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
