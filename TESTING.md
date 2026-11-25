@@ -26,3 +26,5 @@ Crea una stanza vera su `car-flopper.federicotaranu.site`, collega due
 client WebSocket e ripara un pezzo insieme verificando che entrambi vedano
 lo stesso stato. **Colpisce la produzione**: eseguirlo con parsimonia,
 dopo i deploy.
+
+Aggiornamento 2026-11-25: `server/test-room.js` controlla anche gli helper puri del server (codici stanza, emote, velocita' co-op, posti liberi, ETA).
