@@ -573,4 +573,9 @@ function mkRoom(){
  if(!close(r(10,2),0.17))throw Error('two fixers');
  if(!close(r(10,4),0.31))throw Error('four fixers');
  if(!close(r(10,0),0.1))throw Error('zero fixers counts as one');
-     }
+}
+
+{
+ const t=mod.totalSoloSeconds();
+ if(t!==66)throw Error('expected 66 solo seconds, got '+t);
+}
