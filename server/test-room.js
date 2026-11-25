@@ -600,4 +600,10 @@ function mkRoom(){
  if(clampNum(5,0,10)!==5||clampNum(-3,0,10)!==0||clampNum(99,0,10)!==10)throw Error('range');
  if(clampNum('7',0,10)!==7)throw Error('numeric string');
  if(clampNum(NaN,1,10)!==0||clampNum(Infinity,0,10)!==0||clampNum(undefined,0,10)!==0)throw Error('non finite becomes 0');
-     }
+}
+
+{
+ const {slotsLeft}=mod;
+ if(slotsLeft(0)!==4||slotsLeft(3)!==1||slotsLeft(4)!==0||slotsLeft(9)!==0)throw Error('slots');
+ if(slotsLeft('x')!==4||slotsLeft(undefined)!==4)throw Error('bad count');
+}
