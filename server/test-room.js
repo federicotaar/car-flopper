@@ -552,3 +552,10 @@ function mkRoom(){
  for(const bad of ['abcd','ABC','ABCDE','AB0D','ABID','ABLO','',null,undefined,1234])
   if(isRoomCode(bad))throw Error('should reject '+String(bad));
 }
+
+{
+ const {normalizeRoomCode:n}=mod;
+ if(n(' ab-cd ')!=='ABCD')throw Error('case, space and dash');
+ if(n('k7 m2')!=='K7M2')throw Error('inner space');
+ if(n('ab0d')!==null||n(42)!==null||n('abc')!==null)throw Error('invalid stays null');
+     }
