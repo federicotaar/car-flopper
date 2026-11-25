@@ -438,7 +438,7 @@ export class GarageRoom {
 }
 
 // Seconds left at the current number of fixers; null while nobody is repairing it.
-function partEta(id, state) {
+export function partEta(id, state) {
   const def = PARTS.find(p => p.id === id);
   if (!def || !state) return null;
   if (state.progress >= 1) return 0;
