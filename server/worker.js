@@ -447,7 +447,7 @@ export function partEta(id, state) {
   return Math.round((1 - state.progress) / rate * 10) / 10;
 }
 
-function clampNum(v, lo, hi) {
+export function clampNum(v, lo, hi) {
   const n = Number(v);
   if (!Number.isFinite(n)) return 0;
   return Math.max(lo, Math.min(hi, n));
