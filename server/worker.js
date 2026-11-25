@@ -125,6 +125,13 @@ export function slotsLeft(playerCount) {
   return Math.max(0, MAX_PLAYERS - (Number(playerCount) || 0));
 }
 
+// "7s", "1m 5s", or "--" when no estimate exists.
+export function formatEta(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return "--";
+  const s = Math.round(seconds);
+  return s < 60 ? s + "s" : Math.floor(s / 60) + "m " + (s % 60) + "s";
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
