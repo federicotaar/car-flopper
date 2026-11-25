@@ -93,6 +93,14 @@ export function isRoomCode(value) {
   return true;
 }
 
+// Players type codes on a phone: ignore case, spaces and dashes ("ab-cd" -> "ABCD").
+// Returns null when the result is not a valid code.
+export function normalizeRoomCode(input) {
+  if (typeof input !== "string") return null;
+  const code = input.replace(/[\s-]+/g, "").toUpperCase();
+  return isRoomCode(code) ? code : null;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
