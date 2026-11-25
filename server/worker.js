@@ -111,6 +111,11 @@ export function coopRate(soloSeconds, fixers) {
   return (1 + COOP_BONUS * (Math.max(1, fixers) - 1)) / soloSeconds;
 }
 
+// Time one mechanic would need to repair every part of a car.
+export function totalSoloSeconds() {
+  return PARTS.reduce((sum, p) => sum + p.seconds, 0);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
