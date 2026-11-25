@@ -2,6 +2,11 @@
 
 Le tappe principali di Car Flopper, dalle più recenti. Le versioni scaricabili sono nella tab Releases.
 
+## 2026-11-25
+
+- Server multiplayer: nuovi helper `isRoomCode`, `normalizeRoomCode`, `isEmote`, `coopRate`, `totalSoloSeconds`, `partIds`, `slotsLeft` e `formatEta`; `partEta` e `clampNum` ora sono esportati.
+- Un test in `server/test-room.js` per ognuno.
+
 ## 2026-11-24
 
 - Server multiplayer: l'host puo' espellere un giocatore in lobby (`kick`) e riavviare una stanza finita (`restart`).
