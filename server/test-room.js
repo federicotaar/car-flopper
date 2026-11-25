@@ -585,3 +585,12 @@ function mkRoom(){
  if(ids.length!==8||new Set(ids).size!==8)throw Error('eight unique parts');
  if(ids[0]!=='wheelFL'||ids[4]!=='engine')throw Error('order is kept');
 }
+
+{
+ const {partEta}=mod;
+ if(partEta('wheelFL',{progress:0,fixers:1})!==7)throw Error('solo eta');
+ if(partEta('wheelFL',{progress:0.5,fixers:2})!==2.1)throw Error('co-op eta '+partEta('wheelFL',{progress:0.5,fixers:2}));
+ if(partEta('wheelFL',{progress:1,fixers:0})!==0)throw Error('done is 0');
+ if(partEta('wheelFL',{progress:0.2,fixers:0})!==null)throw Error('idle is null');
+ if(partEta('nope',{progress:0,fixers:1})!==null||partEta('door',null)!==null)throw Error('unknown part or state');
+}
