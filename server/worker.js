@@ -86,6 +86,13 @@ export function makeCode() {
   return c;
 }
 
+// True for a well formed room code: 4 characters, all from the code alphabet.
+export function isRoomCode(value) {
+  if (typeof value !== "string" || value.length !== 4) return false;
+  for (const ch of value) if (!CODE_ALPHABET.includes(ch)) return false;
+  return true;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
