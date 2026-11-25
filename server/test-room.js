@@ -607,3 +607,10 @@ function mkRoom(){
  if(slotsLeft(0)!==4||slotsLeft(3)!==1||slotsLeft(4)!==0||slotsLeft(9)!==0)throw Error('slots');
  if(slotsLeft('x')!==4||slotsLeft(undefined)!==4)throw Error('bad count');
 }
+
+{
+ const {formatEta}=mod;
+ if(formatEta(7)!=='7s'||formatEta(0)!=='0s'||formatEta(2.4)!=='2s')throw Error('seconds');
+ if(formatEta(65)!=='1m 5s'||formatEta(120)!=='2m 0s')throw Error('minutes');
+ if(formatEta(null)!=='--'||formatEta(-1)!=='--'||formatEta(NaN)!=='--')throw Error('missing');
+}
